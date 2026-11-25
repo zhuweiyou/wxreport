@@ -2,41 +2,58 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"time"
+
+	"github.com/spf13/cobra"
 
 	reportstate "wxreport/internal/state"
 )
 
-func runStatePlan(ctx context.Context, env *Env, args []string) error {
-	fs := flag.NewFlagSet("state-plan", flag.ContinueOnError)
-	exportPath := fs.String("export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
-	statePath := fs.String("state", "data/topics.json", "增量状态文件")
-	out := fs.String("out", "data/wxstate-plan.json", "输出给模型的计划 JSON")
-	chatName := fs.String("chat-name", "", "群名（报告标题用）")
-	tailHours := fs.Int("tail-hours", 6, "尾部未归属消息回看小时数")
-	if err := parseFlags(env, fs, args); err != nil {
-		return err
-	}
+type statePlanOptions struct {
+	Export    string
+	State     string
+	Out       string
+	ChatName  string
+	TailHours int
+}
 
-	*exportPath = env.abs(*exportPath)
-	*statePath = env.abs(*statePath)
-	*out = env.abs(*out)
+func newStatePlanCmd(env *Env) *cobra.Command {
+	var opts statePlanOptions
+	cmd := &cobra.Command{
+		Use:   "state-plan",
+		Short: "生成增量总结输入（上一轮话题 + 新消息 + 尾部消息）",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runStatePlan(cmd.Context(), env, opts)
+		},
+	}
+	flags := cmd.Flags()
+	flags.StringVar(&opts.Export, "export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
+	flags.StringVar(&opts.State, "state", "data/topics.json", "增量状态文件")
+	flags.StringVar(&opts.Out, "out", "data/wxstate-plan.json", "输出给模型的计划 JSON")
+	flags.StringVar(&opts.ChatName, "chat-name", "", "群名（报告标题用）")
+	flags.IntVar(&opts.TailHours, "tail-hours", 6, "尾部未归属消息回看小时数")
+	return cmd
+}
 
-	st, err := reportstate.Load(*statePath)
+func runStatePlan(ctx context.Context, env *Env, opts statePlanOptions) error {
+	exportPath := env.abs(opts.Export)
+	statePath := env.abs(opts.State)
+	out := env.abs(opts.Out)
+
+	st, err := reportstate.Load(statePath)
 	if err != nil {
 		return err
 	}
-	export, err := loadExport(*exportPath)
+	export, err := loadExport(exportPath)
 	if err != nil {
 		return err
 	}
-	plan, err := reportstate.BuildPlan(st, export, *tailHours, *chatName)
+	plan, err := reportstate.BuildPlan(st, export, opts.TailHours, opts.ChatName)
 	if err != nil {
 		return err
 	}
-	if err := reportstate.WritePlan(*out, plan); err != nil {
+	if err := reportstate.WritePlan(out, plan); err != nil {
 		return err
 	}
 
@@ -47,38 +64,53 @@ func runStatePlan(ctx context.Context, env *Env, args []string) error {
 	fmt.Fprintf(env.Stdout, "模式：%s\n", mode)
 	fmt.Fprintf(env.Stdout, "上一轮话题：%d（活跃 %d）\n", len(st.Topics), len(plan.Topics))
 	fmt.Fprintf(env.Stdout, "新消息：%d，尾部未归属：%d\n", len(plan.NewMessages), len(plan.TailMessages))
-	fmt.Fprintf(env.Stdout, "已写入：%s\n", *out)
+	fmt.Fprintf(env.Stdout, "已写入：%s\n", out)
 	return nil
 }
 
-func runStateApply(ctx context.Context, env *Env, args []string) error {
-	fs := flag.NewFlagSet("state-apply", flag.ContinueOnError)
-	statePath := fs.String("state", "data/topics.json", "增量状态文件")
-	planPath := fs.String("plan", "data/wxstate-plan.json", "state-plan 生成的计划")
-	updatePath := fs.String("update", "data/wxstate-update.json", "模型输出的差异 JSON")
-	exportPath := fs.String("export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
-	if err := parseFlags(env, fs, args); err != nil {
-		return err
+type stateApplyOptions struct {
+	State  string
+	Plan   string
+	Update string
+	Export string
+}
+
+func newStateApplyCmd(env *Env) *cobra.Command {
+	var opts stateApplyOptions
+	cmd := &cobra.Command{
+		Use:   "state-apply",
+		Short: "合并模型输出的增量状态",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runStateApply(cmd.Context(), env, opts)
+		},
 	}
+	flags := cmd.Flags()
+	flags.StringVar(&opts.State, "state", "data/topics.json", "增量状态文件")
+	flags.StringVar(&opts.Plan, "plan", "data/wxstate-plan.json", "state-plan 生成的计划")
+	flags.StringVar(&opts.Update, "update", "data/wxstate-update.json", "模型输出的差异 JSON")
+	flags.StringVar(&opts.Export, "export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
+	return cmd
+}
 
-	*statePath = env.abs(*statePath)
-	*planPath = env.abs(*planPath)
-	*updatePath = env.abs(*updatePath)
-	*exportPath = env.abs(*exportPath)
+func runStateApply(ctx context.Context, env *Env, opts stateApplyOptions) error {
+	statePath := env.abs(opts.State)
+	planPath := env.abs(opts.Plan)
+	updatePath := env.abs(opts.Update)
+	exportPath := env.abs(opts.Export)
 
-	st, err := reportstate.Load(*statePath)
+	st, err := reportstate.Load(statePath)
 	if err != nil {
 		return err
 	}
 	var plan reportstate.Plan
-	if err := readJSON(*planPath, &plan); err != nil {
+	if err := readJSON(planPath, &plan); err != nil {
 		return err
 	}
 	var update reportstate.Update
-	if err := readJSON(*updatePath, &update); err != nil {
+	if err := readJSON(updatePath, &update); err != nil {
 		return err
 	}
-	export, err := loadExport(*exportPath)
+	export, err := loadExport(exportPath)
 	if err != nil {
 		return err
 	}
@@ -86,7 +118,7 @@ func runStateApply(ctx context.Context, env *Env, args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := reportstate.Save(*statePath, next); err != nil {
+	if err := reportstate.Save(statePath, next); err != nil {
 		return err
 	}
 	for _, warning := range warnings {

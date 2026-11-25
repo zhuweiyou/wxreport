@@ -1,8 +1,6 @@
 package main
 
 import (
-	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -24,24 +22,6 @@ func (e *Env) abs(value string) string {
 		return value
 	}
 	return filepath.Join(e.Root, value)
-}
-
-// flagError 表示 flag 已经自行打印过错误和用法，runMain 只需返回退出码 2。
-type flagError struct{ err error }
-
-func (e *flagError) Error() string { return e.err.Error() }
-func (e *flagError) Unwrap() error { return e.err }
-
-// parseFlags 统一解析子命令参数，并把 flag 的错误输出接到 Env.Stderr。
-func parseFlags(env *Env, fs *flag.FlagSet, args []string) error {
-	fs.SetOutput(env.Stderr)
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return err
-		}
-		return &flagError{err: err}
-	}
-	return nil
 }
 
 // loadLocalEnv 读取项目根目录的 config/local.env（KEY=VALUE），用于本机私有配置。

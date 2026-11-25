@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,6 +10,36 @@ import (
 
 	"wxreport/internal/rank"
 )
+
+func TestRunMainHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := runMain([]string{"--help"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("--help 退出码 = %d，期望 0（stderr: %s）", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "wxreport") {
+		t.Fatalf("帮助输出缺少命令名: %q", stdout.String())
+	}
+}
+
+func TestRunMainUnknownCommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := runMain([]string{"nope"}, &stdout, &stderr); code == 0 {
+		t.Fatal("未知命令应返回非 0 退出码")
+	}
+	if !strings.Contains(stderr.String(), "unknown command") {
+		t.Fatalf("stderr 未包含 unknown command: %q", stderr.String())
+	}
+}
+
+func TestRunMainMissingArg(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := runMain([]string{"export"}, &stdout, &stderr); code != 1 {
+		t.Fatalf("export 缺参数退出码 = %d，期望 1", code)
+	}
+	if !strings.Contains(stderr.String(), "用法: wxreport export") {
+		t.Fatalf("stderr 未包含用法提示: %q", stderr.String())
+	}
+}
 
 func TestRankFileWithMessages(t *testing.T) {
 	dir := t.TempDir()

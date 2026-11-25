@@ -3,32 +3,51 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	"wxreport/internal/rank"
 )
 
-func runRank(ctx context.Context, env *Env, args []string) error {
-	fs := flag.NewFlagSet("rank", flag.ContinueOnError)
-	top := fs.Int("top", 10, "保留的话题数（<=0 表示全部保留）")
-	dryRun := fs.Bool("dry-run", false, "只打印排序结果，不写回文件")
-	messagesPath := fs.String("messages", "", "wxreport export 生成的 JSON（提供后按话轮模型排序）")
-	if err := parseFlags(env, fs, args); err != nil {
-		return err
-	}
-	if fs.NArg() != 1 {
-		return errors.New("用法: wxreport rank [--messages data/wxmsgs.json] <report.md> [--top 10] [--dry-run]")
-	}
+type rankOptions struct {
+	Top      int
+	DryRun   bool
+	Messages string
+}
 
-	path := env.abs(fs.Arg(0))
-	if *messagesPath != "" {
-		*messagesPath = env.abs(*messagesPath)
+func newRankCmd(env *Env) *cobra.Command {
+	var opts rankOptions
+	cmd := &cobra.Command{
+		Use:   "rank <report.md>",
+		Short: "按有效参与人数重排话题并保留 TOP10",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("用法: wxreport rank [--messages data/wxmsgs.json] <report.md> [--top 10] [--dry-run]")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRank(cmd.Context(), env, args[0], opts)
+		},
 	}
-	return rankFileTo(env.Stdout, path, *messagesPath, *top, *dryRun)
+	flags := cmd.Flags()
+	flags.IntVar(&opts.Top, "top", 10, "保留的话题数（<=0 表示全部保留）")
+	flags.BoolVar(&opts.DryRun, "dry-run", false, "只打印排序结果，不写回文件")
+	flags.StringVar(&opts.Messages, "messages", "", "wxreport export 生成的 JSON（提供后按话轮模型排序）")
+	return cmd
+}
+
+func runRank(ctx context.Context, env *Env, reportPath string, opts rankOptions) error {
+	path := env.abs(reportPath)
+	messagesPath := opts.Messages
+	if messagesPath != "" {
+		messagesPath = env.abs(messagesPath)
+	}
+	return rankFileTo(env.Stdout, path, messagesPath, opts.Top, opts.DryRun)
 }
 
 // rankFile 按话轮模型（或消息数回退模型）重排话题并保留 top 个。
