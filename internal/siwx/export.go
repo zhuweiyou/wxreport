@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"wxreport/internal/fsutil"
 )
 
 // ExportMessage 是导出文件里的一条消息。Index 从 1 开始，供话题聚类引用。
@@ -108,18 +109,8 @@ func Export(account, chat string, start, end int64, out string) (ExportStats, er
 	if err != nil {
 		return ExportStats{}, err
 	}
-	if dir := filepath.Dir(out); dir != "" && dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return ExportStats{}, fmt.Errorf("创建导出目录: %w", err)
-		}
-	}
-	tmp := out + ".tmp"
-	if err := os.WriteFile(tmp, content, 0o644); err != nil {
-		return ExportStats{}, fmt.Errorf("写入导出文件: %w", err)
-	}
-	if err := os.Rename(tmp, out); err != nil {
-		_ = os.Remove(tmp)
-		return ExportStats{}, fmt.Errorf("写回导出文件: %w", err)
+	if err := fsutil.WriteFileAtomic(out, content, 0o644); err != nil {
+		return ExportStats{}, err
 	}
 
 	return ExportStats{Total: len(exported), Participants: len(senders), Output: out}, nil

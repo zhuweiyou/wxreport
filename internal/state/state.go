@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"wxreport/internal/fsutil"
 	"wxreport/internal/rank"
 )
 
@@ -82,20 +83,7 @@ func Save(path string, st *State) error {
 	if err != nil {
 		return err
 	}
-	if dir := filepath.Dir(path); dir != "" && dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("创建状态目录: %w", err)
-		}
-	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, append(raw, '\n'), 0o644); err != nil {
-		return fmt.Errorf("写入状态临时文件: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("写回状态文件: %w", err)
-	}
-	return nil
+	return fsutil.WriteFileAtomic(path, append(raw, '\n'), 0o644)
 }
 
 // PlanMessage 是给模型看的新消息/尾部消息。
@@ -255,20 +243,7 @@ func WritePlan(path string, plan *Plan) error {
 	}
 	builder.WriteString("}\n")
 
-	if dir := filepath.Dir(path); dir != "" && dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("创建计划目录: %w", err)
-		}
-	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, []byte(builder.String()), 0o644); err != nil {
-		return fmt.Errorf("写入计划文件: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("写回计划文件: %w", err)
-	}
-	return nil
+	return fsutil.WriteStringAtomic(path, builder.String(), 0o644)
 }
 
 // BuildPlan 计算新消息、尾部未归属消息，以及上一轮话题的活跃/过期情况。

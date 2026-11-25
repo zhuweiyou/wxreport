@@ -25,8 +25,9 @@
 ```
 .claude/commands/wx-top10.md            每 4 小时执行的工作流
 .claude/settings.json                   交互式会话的权限配置
-cmd/wxreport/main.go                    本地 CLI：刷新 DB、导出消息、增量状态、报告、截图上传
+cmd/wxreport/                           本地 CLI：main 分发 + 各子命令一个文件
 internal/siwx/                          DB 刷新、消息导出、昵称映射、资源提取
+internal/fsutil/                        原子写入工具（临时文件 + rename）
 internal/state/                         增量状态：计划、差异合并、报告渲染
 internal/rank/                          话轮模型：话轮、有效参与人数、文字/密集度
 internal/shot/                          长图：Markdown 渲染、headless 截图、可选 OSS 上传
