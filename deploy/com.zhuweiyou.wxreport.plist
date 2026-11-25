@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.zhuweiyou.wxreport</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__CLAUDE_BIN__</string>
+    <string>-p</string>
+    <string>读取并严格执行 __PROJECT_DIR__/.claude/commands/wx-top10.md 中定义的工作流，群为 __CHAT_ID__，生成最近 24 小时 TOP10 话题报告并写入 reports/</string>
+    <string>--mcp-config</string>
+    <string>__PROJECT_DIR__/.mcp.json</string>
+    <string>--strict-mcp-config</string>
+    <string>--model</string>
+    <string>sonnet</string>
+    <string>--output-format</string>
+    <string>text</string>
+    <string>--allowedTools</string>
+    <string>mcp__stories-in-wx__list_sessions</string>
+    <string>Read</string>
+    <string>Write</string>
+    <string>Bash(date:*)</string>
+    <string>Bash(go run ./cmd/wxreport:*)</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__PROJECT_DIR__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>PATH</key>
+    <string>__PATH__</string>
+  </dict>
+
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key><integer>0</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>4</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>8</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>12</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>16</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>20</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>StandardOutPath</key>
+  <string>__PROJECT_DIR__/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__PROJECT_DIR__/logs/launchd.err.log</string>
+</dict>
+</plist>

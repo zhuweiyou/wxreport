@@ -1,0 +1,14 @@
+{
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "allow": [
+      "mcp__stories-in-wx__get_messages",
+      "mcp__stories-in-wx__list_sessions",
+      "mcp__stories-in-wx__search_messages",
+      "Read(.claude/commands/wx-top10.md)",
+      "Write(reports/**)",
+      "Bash(date:*)",
+      "Bash(go run ./cmd/wxreport:*)"
+    ]
+  }
+}
