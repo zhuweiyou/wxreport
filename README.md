@@ -25,7 +25,7 @@
 ```
 .claude/commands/wx-top10.md            每 4 小时执行的工作流
 .claude/settings.json                   交互式会话的权限配置
-cmd/wxreport/                           本地 CLI：main 分发 + 各子命令一个文件
+cmd/wxreport/                           本地 CLI：cobra 命令 + 各子命令一个文件
 internal/siwx/                          DB 刷新、消息导出、昵称映射、资源提取
 internal/fsutil/                        原子写入工具（临时文件 + rename）
 internal/state/                         增量状态：计划、差异合并、报告渲染
@@ -96,6 +96,9 @@ data/
 ## 命令
 
 ```bash
+go run ./cmd/wxreport help
+# 查看全部命令与参数
+
 go run ./cmd/wxreport refresh-db
 # 刷新 SIWX 的 DB 解密缓存
 
@@ -287,6 +290,7 @@ label 与文件名使用 `com.zhuweiyou.wxreport`，每天 **00:00、04:00、08:
 ```bash
 launchctl bootout "gui/$(id -u)/com.zhuweiyou.wxreport" 2>/dev/null || true
 mkdir -p logs
+# 先按下表替换 deploy 模板里的占位符，再复制到 LaunchAgents
 cp deploy/com.zhuweiyou.wxreport.plist ~/Library/LaunchAgents/
 launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.zhuweiyou.wxreport.plist
 ```
@@ -300,3 +304,5 @@ launchctl bootout "gui/$(id -u)/com.zhuweiyou.wxreport"
 ```
 
 headless 调用依赖 `~/.claude/settings.json` 中的 `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` 以及 `magpie` 代理。
+
+无人值守时 Claude 的工具白名单由 plist 的 `--allowedTools` 决定，不依赖 `~/.claude.json` 里的 workspace 信任标记。首次在新目录运行时，`logs/launchd.err.log` 可能出现「workspace has not been trusted」并忽略 `.claude/settings.json` 的权限，属正常现象，不影响工作流执行。
