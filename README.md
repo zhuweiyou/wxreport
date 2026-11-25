@@ -152,6 +152,7 @@ launchctl kickstart -k "gui/$(id -u)/com.zhuweiyou.wxreport"
 ```bash
 launchctl print "gui/$(id -u)/com.zhuweiyou.wxreport"
 launchctl bootout "gui/$(id -u)/com.zhuweiyou.wxreport"
+mkdir -p logs
 cp deploy/com.zhuweiyou.wxreport.plist ~/Library/LaunchAgents/
 launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.zhuweiyou.wxreport.plist
 ```
