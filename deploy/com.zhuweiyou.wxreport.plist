@@ -9,7 +9,7 @@
   <array>
     <string>__CLAUDE_BIN__</string>
     <string>-p</string>
-    <string>读取并严格执行 __PROJECT_DIR__/.claude/commands/wx-top10.md 中定义的工作流，群为 __CHAT_ID__，生成最近 24 小时 TOP10 话题报告并写入 reports/</string>
+    <string>读取并严格执行 __PROJECT_DIR__/.claude/commands/wx-top10.md 中定义的工作流，群为 __CHAT_ID__，生成最近 24 小时 TOP10 话题报告并写入 data/reports/</string>
     <string>--mcp-config</string>
     <string>__PROJECT_DIR__/.mcp.json</string>
     <string>--strict-mcp-config</string>

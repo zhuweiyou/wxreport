@@ -101,7 +101,7 @@ type report struct {
 	Path  string
 }
 
-// latestReport 返回 reports 目录里最新的一篇报告。文件名是 14 位时间戳时按文件名排序，
+// latestReport 返回报告目录（data/reports）里最新的一篇报告。文件名是 14 位时间戳时按文件名排序，
 // 否则退回文件修改时间。
 func latestReport(dir string) (report, error) {
 	entries, err := os.ReadDir(dir)

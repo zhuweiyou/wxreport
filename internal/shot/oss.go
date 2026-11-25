@@ -24,6 +24,8 @@ type OSSConfig struct {
 	AccessKeySecret string
 	// PublicBase 是可选的自定义域名/CDN 前缀，例如 https://cdn.example.com。
 	PublicBase string
+	// Path 是 config/oss.env 里配置的默认上传路径；为空时由调用方回退到 latest-report.png。
+	Path string
 }
 
 // LoadOSSConfig 读取 OSS 配置：环境变量优先，其次 config/oss.env。
@@ -65,6 +67,7 @@ func LoadOSSConfig(root string) (OSSConfig, error) {
 		AccessKeyID:     get("OSS_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_ID"),
 		AccessKeySecret: get("OSS_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
 		PublicBase:      get("OSS_PUBLIC_BASE", "OSS_DOMAIN"),
+		Path:            get("OSS_PATH"),
 	}
 
 	var missing []string
@@ -88,27 +91,27 @@ func LoadOSSConfig(root string) (OSSConfig, error) {
 }
 
 // PublicURL 返回对象的公网访问地址。
-func (cfg OSSConfig) PublicURL(key string) string {
-	key = strings.TrimLeft(key, "/")
+func (cfg OSSConfig) PublicURL(objectPath string) string {
+	objectPath = strings.TrimLeft(objectPath, "/")
 	if cfg.PublicBase != "" {
 		base := strings.TrimRight(cfg.PublicBase, "/")
 		if !strings.Contains(base, "://") {
 			base = "https://" + base
 		}
-		return base + "/" + escapeKey(key)
+		return base + "/" + escapeKey(objectPath)
 	}
 	endpoint := cfg.Endpoint
 	for _, prefix := range []string{"https://", "http://"} {
 		endpoint = strings.TrimPrefix(endpoint, prefix)
 	}
-	return "https://" + cfg.Bucket + "." + strings.TrimRight(endpoint, "/") + "/" + escapeKey(key)
+	return "https://" + cfg.Bucket + "." + strings.TrimRight(endpoint, "/") + "/" + escapeKey(objectPath)
 }
 
-// Upload 上传 PNG 到固定 key；同名对象直接覆盖。
-func Upload(cfg OSSConfig, key string, data []byte) (string, error) {
-	key = strings.TrimLeft(strings.TrimSpace(key), "/")
-	if key == "" {
-		return "", fmt.Errorf("OSS 对象 key 不能为空")
+// Upload 上传 PNG 到指定路径；同名对象直接覆盖。
+func Upload(cfg OSSConfig, objectPath string, data []byte) (string, error) {
+	objectPath = strings.TrimLeft(strings.TrimSpace(objectPath), "/")
+	if objectPath == "" {
+		return "", fmt.Errorf("OSS 上传路径不能为空")
 	}
 
 	client, err := oss.New(cfg.Endpoint, cfg.AccessKeyID, cfg.AccessKeySecret)
@@ -120,7 +123,7 @@ func Upload(cfg OSSConfig, key string, data []byte) (string, error) {
 		return "", fmt.Errorf("打开 OSS Bucket %s: %w", cfg.Bucket, err)
 	}
 
-	err = bucket.PutObject(key, bytes.NewReader(data),
+	err = bucket.PutObject(objectPath, bytes.NewReader(data),
 		oss.ContentType("image/png"),
 		// 固定地址覆盖后必须让客户端重新拉取：no-store 连缓存副本都不留。
 		oss.CacheControl("no-store, no-cache, must-revalidate, max-age=0"),
@@ -128,9 +131,9 @@ func Upload(cfg OSSConfig, key string, data []byte) (string, error) {
 		oss.ContentLength(int64(len(data))),
 	)
 	if err != nil {
-		return "", fmt.Errorf("上传 OSS %s: %w", key, err)
+		return "", fmt.Errorf("上传 OSS %s: %w", objectPath, err)
 	}
-	return cfg.PublicURL(key), nil
+	return cfg.PublicURL(objectPath), nil
 }
 
 func readEnvFile(path string) map[string]string {

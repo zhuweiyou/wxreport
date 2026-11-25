@@ -1,18 +1,7 @@
 .DS_Store
-bin/
-# 旧 FC 架构产物（新架构已移除服务端）
-code/
-config/admin-password
 logs/
-runs/
-# 增量话题状态（本地持久化，只忽略根目录 state/）
-/state/
-.env
-.env.local
-.env.*.local
-config/oss.env
-# 本机私有配置（账号、群 ID、群名），不进入仓库
+# 本机数据目录：topics.json 持久，报告在 reports/，其余中间产物可随时删（只忽略根目录 data/）
+/data/
+# 本机私有配置（账号、群 ID、群名、OSS 密钥），不进入仓库
 config/local.env
-# 群聊报告只留在本地，整个目录不进入公开仓库
-/reports/
-.claude/scheduled_tasks.lock
+config/oss.env

@@ -1,10 +1,10 @@
 # wxreport
 
-每 4 小时（00:00、04:00、08:00、12:00、16:00、20:00）在本地读取微信群最近 24 小时的消息，由 Claude 归纳成 **TOP10 话题**（摘要、AI 点评、参与者、资源脚注），生成 Markdown 报告。报告写到本地 `reports/`，随后由 `wxreport shot` 生成手机长图；配置了 OSS 时覆盖上传到固定地址，未配置时只保留本地 PNG。
+每 4 小时（00:00、04:00、08:00、12:00、16:00、20:00）在本地读取微信群最近 24 小时的消息，由 Claude 归纳成 **TOP10 话题**（摘要、AI 点评、参与者、资源脚注），生成 Markdown 报告。报告写到本地 `data/reports/`，随后由 `wxreport shot` 生成手机长图；配置了 OSS 时覆盖上传到固定地址，未配置时只保留本地 PNG。
 
 消息读取依赖开源项目 [SIWX（Stories in WX）](https://github.com/ImUpXuu/SIWX)：由它负责微信 4.x 本地数据库的发现、解密，以及 MCP / HTTP 接口。本项目不包含数据库解密逻辑，也不会上传聊天数据。
 
-总结是**增量**的：`state/topics.json` 持久化上一轮所有活跃话题和稳定的 message_id；下一次只让模型看新消息 + 最近几小时未被归属的尾部消息，更新受影响的话题摘要，再由 Go 重新算分、排序并渲染报告。首次没有状态时做一次全量 bootstrap，之后每次只处理差异。
+总结是**增量**的：`data/topics.json` 持久化上一轮所有活跃话题和稳定的 message_id；下一次只让模型看新消息 + 最近几小时未被归属的尾部消息，更新受影响的话题摘要，再由 Go 重新算分、排序并渲染报告。首次没有状态时做一次全量 bootstrap，之后每次只处理差异。
 
 ## 运行时依赖：SIWX
 
@@ -40,8 +40,7 @@ deploy/com.zhuweiyou.wxreport.plist     launchd 定时任务模板（安装前�
 config/local.env.example                    本机私有配置模板（账号、群 ID、群名）
 config/oss.env.example                      OSS 上传配置模板（可选）
 .mcp.json                                   headless Claude 的 MCP 配置
-state/topics.json                           增量话题状态（本地，已 gitignore）
-reports/                                    每 4 小时的 Markdown 报告（整个目录只在本机，已 gitignore；report 会自动创建）
+data/                                       本机数据目录（已 gitignore）：topics.json 持久，reports/ 存每 4 小时的 Markdown 报告；其余为最近一次运行的中间产物与长图，可随时删
 ```
 
 ## 本机私有配置
@@ -65,20 +64,20 @@ cp config/local.env.example config/local.env
 
 ```bash
 go run ./cmd/wxreport refresh-db          # 刷新 stories-in-wx 的 DB 解密缓存
-go run ./cmd/wxreport export --chat ID --start UNIX --end UNIX --out /tmp/wxmsgs.json
+go run ./cmd/wxreport export --chat ID --start UNIX --end UNIX --out data/wxmsgs.json
                                           # 导出窗口内消息（安全昵称 + 稳定 mid）
 go run ./cmd/wxreport resources --chat ID # 最近 24h 的网址/卡片资源
-go run ./cmd/wxreport state-plan --export /tmp/wxmsgs.json --state state/topics.json --out /tmp/wxstate-plan.json
+go run ./cmd/wxreport state-plan --export data/wxmsgs.json --state data/topics.json --out data/wxstate-plan.json
                                           # 计算上一轮话题 + 新消息 + 尾部未归属消息
-go run ./cmd/wxreport state-apply --state state/topics.json --plan /tmp/wxstate-plan.json --update /tmp/wxstate-update.json --export /tmp/wxmsgs.json
+go run ./cmd/wxreport state-apply --state data/topics.json --plan data/wxstate-plan.json --update data/wxstate-update.json --export data/wxmsgs.json
                                           # 合并模型输出的增量差异
-go run ./cmd/wxreport report --state state/topics.json --export /tmp/wxmsgs.json --out reports/x.md
+go run ./cmd/wxreport report --state data/topics.json --export data/wxmsgs.json --out data/reports/x.md
                                           # 算分、截断 TOP10、渲染最终报告
 go run ./cmd/wxreport shot                # 生成长图；配置了 OSS 则上传，未配置自动跳过（--no-upload 强制只生成本地图）
 
 # 兼容/手动：旧的全量草稿排序
-go run ./cmd/wxreport rank --messages /tmp/wxmsgs.json reports/x.md
-go run ./cmd/wxreport rank --dry-run reports/x.md
+go run ./cmd/wxreport rank --messages data/wxmsgs.json data/reports/x.md
+go run ./cmd/wxreport rank --dry-run data/reports/x.md
 
 go run ./cmd/wxreport names --chat ID     # 调试用：sender -> 昵称映射（排除备注）
 
@@ -89,8 +88,9 @@ make test                                 # 跑全部测试
 
 上传是自用分发步骤，不是必需项：
 
-- 不配置 `config/oss.env`（也没有 `OSS_*` 环境变量）时，`wxreport shot` 只生成本地 `runs/latest.png`，跳过上传，退出码仍为 0
+- 不配置 `config/oss.env`（也没有 `OSS_*` 环境变量）时，`wxreport shot` 只生成本地 `data/latest-report.png`，跳过上传，退出码仍为 0
 - 需要上传时：`cp config/oss.env.example config/oss.env`，填写 Bucket（公共读）与 AccessKey
+- 上传路径默认 `latest-report.png`（Bucket 根目录），可在 `config/oss.env` 用 `OSS_PATH=` 修改，或用 `--oss-path` / 环境变量 `OSS_PATH` 覆盖
 - 只想要 Markdown 报告：不执行 `shot` 即可；只想要本地图片：不配置 OSS，或给 `shot` 加 `--no-upload`
 
 ## 数据刷新
@@ -117,7 +117,7 @@ make test                                 # 跑全部测试
 
 ## 失败处理
 
-单次执行严格 **fail-fast**：时间获取、消息导出、`state-plan`、写更新文件、`state-apply`、`report`、`shot` 任一步失败，立即停止本次执行，不继续后续步骤；不会删除 `state/topics.json` 或已生成的报告。
+单次执行严格 **fail-fast**：时间获取、消息导出、`state-plan`、写更新文件、`state-apply`、`report`、`shot` 任一步失败，立即停止本次执行，不继续后续步骤；不会删除 `data/topics.json` 或已生成的报告。
 
 失败**不会停止定时任务**：launchd 下一次计划仍会照常执行。日志在 `logs/launchd.out.log` 与 `logs/launchd.err.log`。
 
@@ -139,7 +139,7 @@ label 与文件名使用 `com.zhuweiyou.wxreport`。如果之前安装过旧版�
 - `magpie.app` 保持运行（`127.0.0.1:3425` 模型代理，launchd 托管）
 - 微信保持登录，`stories-in-wx` 能读取本地消息库
 - 已安装 Chrome/Chromium（`wxreport shot` 截图用）
-- 可选：配置 `config/oss.env` 后长图会覆盖上传 OSS；不配置则只生成本地 `runs/latest.png`
+- 可选：配置 `config/oss.env` 后长图会覆盖上传 OSS；不配置则只生成本地 `data/latest-report.png`
 
 手动触发一次：
 
@@ -191,7 +191,7 @@ headless 调用依赖 `~/.claude/settings.json` 中的 `ANTHROPIC_BASE_URL` / `A
 
 最终报告由 `wxreport report` 从增量状态渲染：状态里的摘要用 `[[res:n]]` 引用该话题 `resources` 数组的第 n 个资源，渲染时统一编号为 `[^n]` 并生成「资源列表」。**最终报告不含 `[[res:n]]`、`<!-- msgs -->` 等内部标记。**
 
-页面地址来自报告时间戳：`reports/20261123213900.md` → `/reports/20261123213900`。Markdown 正文在请求时由 goldmark 渲染，模板与样式改动不需要重新生成任何 HTML 文件。
+页面地址来自报告时间戳：`data/reports/20261123213900.md` → `/reports/20261123213900`。Markdown 正文在请求时由 goldmark 渲染，模板与样式改动不需要重新生成任何 HTML 文件。
 
 格式规则：
 
@@ -208,7 +208,7 @@ headless 调用依赖 `~/.claude/settings.json` 中的 `ANTHROPIC_BASE_URL` / `A
 
 ## 增量总结
 
-`state/topics.json` 持久化上一轮所有活跃话题（不只 TOP10）：
+`data/topics.json` 持久化上一轮所有活跃话题（不只 TOP10）：
 
 ```json
 {"id":"t1","title":"...","commentary":"...","summary":"...[[res:1]]","message_ids":["p:..."],"resources":[...]}

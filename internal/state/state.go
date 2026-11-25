@@ -45,7 +45,7 @@ type Topic struct {
 	Resources  []Resource `json:"resources,omitempty"`
 }
 
-// State 是 state/topics.json 的完整内容。
+// State 是 data/topics.json 的完整内容。
 type State struct {
 	Version   int     `json:"version"`
 	Chat      string  `json:"chat"`

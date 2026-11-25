@@ -6,7 +6,9 @@
       "mcp__stories-in-wx__list_sessions",
       "mcp__stories-in-wx__search_messages",
       "Read(.claude/commands/wx-top10.md)",
-      "Write(reports/**)",
+      "Read(data/**)",
+      "Edit(data/**)",
+      "Write(data/**)",
       "Bash(date:*)",
       "Bash(go run ./cmd/wxreport:*)"
     ]

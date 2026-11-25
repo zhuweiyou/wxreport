@@ -45,10 +45,11 @@ func main() {
 		account := flags.String("account", os.Getenv("SIWX_ACCOUNT"), "账号 wxid（默认取 SIWX_ACCOUNT）")
 		start := flags.Int64("start", time.Now().Add(-24*time.Hour).Unix(), "开始时间（Unix 秒）")
 		end := flags.Int64("end", time.Now().Unix(), "结束时间（Unix 秒）")
-		out := flags.String("out", "/tmp/wxmsgs.json", "输出 JSON 文件")
+		out := flags.String("out", "data/wxmsgs.json", "输出 JSON 文件")
 		_ = flags.Parse(os.Args[2:])
+		resolveRootPath(root, out)
 		if *chat == "" {
-			fatal(errors.New("用法: wxreport export --chat xxx@chatroom --start UNIX --end UNIX --out /tmp/wxmsgs.json"))
+			fatal(errors.New("用法: wxreport export --chat xxx@chatroom --start UNIX --end UNIX --out data/wxmsgs.json"))
 		}
 		if *account == "" {
 			fatal(errors.New("缺少账号：请设置 SIWX_ACCOUNT、写入 config/local.env，或传 --account"))
@@ -88,9 +89,9 @@ func main() {
 		}
 	case "state-plan":
 		flags := flag.NewFlagSet("state-plan", flag.ExitOnError)
-		exportPath := flags.String("export", "/tmp/wxmsgs.json", "wxreport export 生成的 JSON")
-		statePath := flags.String("state", "state/topics.json", "增量状态文件")
-		out := flags.String("out", "/tmp/wxstate-plan.json", "输出给模型的计划 JSON")
+		exportPath := flags.String("export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
+		statePath := flags.String("state", "data/topics.json", "增量状态文件")
+		out := flags.String("out", "data/wxstate-plan.json", "输出给模型的计划 JSON")
 		chatName := flags.String("chat-name", "", "群名（报告标题用）")
 		tailHours := flags.Int("tail-hours", 6, "尾部未归属消息回看小时数")
 		_ = flags.Parse(os.Args[2:])
@@ -122,10 +123,10 @@ func main() {
 		fmt.Printf("已写入：%s\n", *out)
 	case "state-apply":
 		flags := flag.NewFlagSet("state-apply", flag.ExitOnError)
-		statePath := flags.String("state", "state/topics.json", "增量状态文件")
-		planPath := flags.String("plan", "/tmp/wxstate-plan.json", "state-plan 生成的计划")
-		updatePath := flags.String("update", "/tmp/wxstate-update.json", "模型输出的差异 JSON")
-		exportPath := flags.String("export", "/tmp/wxmsgs.json", "wxreport export 生成的 JSON")
+		statePath := flags.String("state", "data/topics.json", "增量状态文件")
+		planPath := flags.String("plan", "data/wxstate-plan.json", "state-plan 生成的计划")
+		updatePath := flags.String("update", "data/wxstate-update.json", "模型输出的差异 JSON")
+		exportPath := flags.String("export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
 		_ = flags.Parse(os.Args[2:])
 		resolveRootPath(root, statePath)
 		resolveRootPath(root, planPath)
@@ -161,14 +162,14 @@ func main() {
 			len(next.Topics), time.Unix(next.WindowEnd, 0).Format("2006-01-02 15:04"))
 	case "report":
 		flags := flag.NewFlagSet("report", flag.ExitOnError)
-		statePath := flags.String("state", "state/topics.json", "增量状态文件")
-		exportPath := flags.String("export", "/tmp/wxmsgs.json", "wxreport export 生成的 JSON")
+		statePath := flags.String("state", "data/topics.json", "增量状态文件")
+		exportPath := flags.String("export", "data/wxmsgs.json", "wxreport export 生成的 JSON")
 		out := flags.String("out", "", "输出报告 Markdown")
 		chatName := flags.String("chat-name", "", "群名（报告标题用）")
 		top := flags.Int("top", 10, "保留的话题数")
 		_ = flags.Parse(os.Args[2:])
 		if *out == "" {
-			fatal(errors.New("用法: wxreport report --out reports/xxx.md [--state ... --export ...]"))
+			fatal(errors.New("用法: wxreport report --out data/reports/xxx.md [--state ... --export ...]"))
 		}
 		resolveRootPath(root, statePath)
 		resolveRootPath(root, exportPath)
@@ -200,7 +201,7 @@ func main() {
 		messagesPath := flags.String("messages", "", "wxreport export 生成的 JSON（提供后按话轮模型排序）")
 		_ = flags.Parse(os.Args[2:])
 		if flags.NArg() != 1 {
-			fatal(errors.New("用法: wxreport rank [--messages /tmp/wxmsgs.json] <report.md> [--top 10] [--dry-run]"))
+			fatal(errors.New("用法: wxreport rank [--messages data/wxmsgs.json] <report.md> [--top 10] [--dry-run]"))
 		}
 		path := flags.Arg(0)
 		if !filepath.IsAbs(path) {
@@ -217,20 +218,16 @@ func main() {
 		reportID := flags.String("report", "", "报告 slug/文件名，默认最新一篇")
 		width := flags.Int("width", shot.DefaultWidth, "CSS 视口宽度")
 		scale := flags.Int("scale", shot.DefaultScale, "图片倍率（2 或 3）")
-		out := flags.String("out", "", "本地 PNG 路径，默认 runs/latest.png")
-		key := flags.String("key", os.Getenv("OSS_KEY"), "OSS 对象 key，默认 wxreport/latest.png（可用 OSS_KEY 覆盖）")
+		out := flags.String("out", "", "本地 PNG 路径，默认 data/latest-report.png")
+		ossPath := flags.String("oss-path", os.Getenv("OSS_PATH"), "OSS 上传路径，默认 latest-report.png（可用 --oss-path 或 OSS_PATH 覆盖）")
 		noUpload := flags.Bool("no-upload", false, "只生成本地图片，不上传 OSS")
 		chromePath := flags.String("chrome", "", "Chrome/Edge 可执行文件路径，默认自动查找")
 		_ = flags.Parse(os.Args[2:])
 
-		if strings.TrimSpace(*key) == "" {
-			*key = "wxreport/latest.png"
-		}
-
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		result, err := shot.Capture(ctx, shot.Options{
-			ReportsDir: filepath.Join(root, "reports"),
+			ReportsDir: filepath.Join(root, "data", "reports"),
 			Report:     *reportID,
 			Width:      *width,
 			Scale:      *scale,
@@ -242,7 +239,7 @@ func main() {
 
 		outPath := *out
 		if outPath == "" {
-			outPath = filepath.Join(root, "runs", "latest.png")
+			outPath = filepath.Join(root, "data", "latest-report.png")
 		} else if !filepath.IsAbs(outPath) {
 			outPath = filepath.Join(root, outPath)
 		}
@@ -261,7 +258,13 @@ func main() {
 				// OSS 是可选的自用步骤：未配置时只保留本地 PNG，不影响本次执行。
 				fmt.Printf("未配置 OSS，跳过上传（本地图片已生成）：%v\n", err)
 			} else {
-				publicURL, err := shot.Upload(cfg, *key, result.PNG)
+				if strings.TrimSpace(*ossPath) == "" {
+					*ossPath = cfg.Path
+				}
+				if strings.TrimSpace(*ossPath) == "" {
+					*ossPath = "latest-report.png"
+				}
+				publicURL, err := shot.Upload(cfg, *ossPath, result.PNG)
 				if err != nil {
 					fatal(err)
 				}
@@ -480,15 +483,15 @@ func usage() {
                             生成增量总结输入（上一轮话题 + 新消息 + 尾部消息）
   wxreport state-apply --state FILE --plan FILE --update FILE --export FILE
                             合并模型输出的增量状态
-  wxreport report --state FILE --export FILE --out reports/x.md
+  wxreport report --state FILE --export FILE --out data/reports/x.md
                             从状态直接渲染并排序最终报告
   wxreport rank <report.md> 按有效参与人数重排话题并保留 TOP10（--dry-run 预览）
   wxreport shot             生成长图（配置了 OSS 则覆盖上传，未配置自动跳过；--no-upload 强制只生成本地图）
 
 示例:
-  go run ./cmd/wxreport rank --dry-run reports/20261123230000.md
+  go run ./cmd/wxreport rank --dry-run data/reports/20261123230000.md
   go run ./cmd/wxreport shot --no-upload
-  go run ./cmd/wxreport shot --scale 3 --key latest.png`)
+  go run ./cmd/wxreport shot --scale 3 --oss-path latest-report.png`)
 }
 
 func fatal(err error) {
