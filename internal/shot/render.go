@@ -27,7 +27,7 @@ var lepchaFont []byte
 var taiThamFont []byte
 
 // 微信群昵称里常见 ᰔᩚ（Lepcha + Tai Tham）装饰字符，Windows/macOS 默认都没有对应字体，
-// 不内嵌就会截成方框。字体只在截图 HTML 里使用，不影响正式站点。
+// 不内嵌就会截成方框。字体只在截图 HTML 里使用，不影响 Markdown 报告本身。
 var rareFontCSS = func() string {
 	var builder strings.Builder
 	builder.WriteString(`@font-face{font-family:"Shot Lepcha";src:url(data:font/ttf;base64,`)
