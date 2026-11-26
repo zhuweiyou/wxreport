@@ -83,7 +83,7 @@ data/latest-report.png             最近一次长图
 ```bash
 mkdir -p logs
 
-# macOS / Linux
+# macOS
 nohup ./wxreport >> logs/wxreport.log 2>&1 &
 
 # Windows (cmd)
