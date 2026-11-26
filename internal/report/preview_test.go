@@ -170,7 +170,7 @@ func TestPreviewHTML(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	if err := tmpl.Execute(file, data); err != nil {
 		t.Fatal(err)
 	}
