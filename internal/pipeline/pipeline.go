@@ -15,6 +15,7 @@ import (
 	"wxreport/internal/fsutil"
 	"wxreport/internal/oss"
 	"wxreport/internal/rank"
+	"wxreport/internal/report"
 	"wxreport/internal/shot"
 	"wxreport/internal/siwx"
 	reportstate "wxreport/internal/state"
@@ -139,7 +140,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	}
 
 	_, _ = fmt.Fprintln(stdout, "== 生成报告 ==")
-	markdown, rankResult, err := reportstate.Render(next, export, reportstate.RenderOptions{
+	markdown, rankResult, err := report.Render(next, export, report.Options{
 		ChatName:       opts.ChatName,
 		Top:            10,
 		NoParticipants: opts.NoParticipants,

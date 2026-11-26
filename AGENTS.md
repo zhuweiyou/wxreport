@@ -8,7 +8,8 @@
 cmd/wxreport/                  CLI：常驻定时 / --once 单次
 internal/pipeline/             固定顺序编排整条流程（Steps 接口可注入 fake）
 internal/siwx/                 SIWX HTTP API：DB 刷新、消息导出、昵称解析
-internal/state/                增量状态：计划、差异合并、报告渲染
+internal/state/                增量状态：计划、差异合并
+internal/report/               报告渲染：Markdown、资源脚注
 internal/summarize/            OpenAI 兼容接口调用与总结提示词
 internal/rank/                 话轮模型：话轮、有效参与人数、文字/密集度
 internal/shot/                长图：Markdown 渲染、headless 截图
@@ -104,7 +105,7 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 
 ## 报告与长图
 
-报告由 `internal/state.Render` 从增量状态生成：
+报告由 `internal/report.Render` 从增量状态生成：
 
 - 状态里的摘要用 `[[res:n]]` 引用话题 `resources` 的第 n 个资源
 - 渲染时统一编号为 `[^n]`，生成「资源列表」
@@ -165,7 +166,8 @@ go test ./internal/pipeline    # 只测编排
 |---|---|
 | `internal/pipeline` | 端到端 fake、0 消息跳过、总结失败、压缩/回退 |
 | `internal/siwx` | 分页、群昵称解析 |
-| `internal/state` | 计划、合并、渲染、参与者开关 |
+| `internal/state` | 计划、合并、淘汰 |
+| `internal/report` | 渲染、资源去重、参与者开关 |
 | `internal/summarize` | 解析重试 |
 | `internal/rank` | 话轮、密集度、回退分数 |
 | `internal/shot` | 报告选择、HTML 渲染、公网地址 |
