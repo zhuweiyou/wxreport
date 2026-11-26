@@ -1,9 +1,8 @@
-// Package shot 的 OSS 上传部分。配置沿用项目旧约定：环境变量优先，
-// 其次读取 config/oss.env（该文件已被 .gitignore 忽略）。
+// Package shot 的 OSS 上传部分。配置优先级：环境变量优先，
+// 其次读取 .env（该文件已被 .gitignore 忽略）。
 package shot
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"net/url"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/joho/godotenv"
 )
 
 // OSSConfig 是阿里云 OSS 的上传配置。
@@ -24,13 +24,16 @@ type OSSConfig struct {
 	AccessKeySecret string
 	// PublicBase 是可选的自定义域名/CDN 前缀，例如 https://cdn.example.com。
 	PublicBase string
-	// Path 是 config/oss.env 里配置的默认上传路径；为空时由调用方回退到 latest-report.png。
+	// Path 是 .env 里配置的默认上传路径；为空时由调用方回退到 latest-report.png。
 	Path string
 }
 
-// LoadOSSConfig 读取 OSS 配置：环境变量优先，其次 config/oss.env。
+// LoadOSSConfig 读取 OSS 配置：环境变量优先，其次 .env。
 func LoadOSSConfig(root string) (OSSConfig, error) {
-	values := readEnvFile(filepath.Join(root, "config", "oss.env"))
+	values, err := godotenv.Read(filepath.Join(root, ".env"))
+	if err != nil {
+		values = map[string]string{}
+	}
 
 	get := func(keys ...string) string {
 		for _, key := range keys {
@@ -84,7 +87,7 @@ func LoadOSSConfig(root string) (OSSConfig, error) {
 		return OSSConfig{}, fmt.Errorf(
 			"缺少 OSS 配置 %s；可设置环境变量，或写入 %s",
 			strings.Join(missing, " / "),
-			filepath.Join(root, "config", "oss.env"),
+			filepath.Join(root, ".env"),
 		)
 	}
 	return cfg, nil
@@ -134,32 +137,6 @@ func Upload(cfg OSSConfig, objectPath string, data []byte) (string, error) {
 		return "", fmt.Errorf("上传 OSS %s: %w", objectPath, err)
 	}
 	return cfg.PublicURL(objectPath), nil
-}
-
-func readEnvFile(path string) map[string]string {
-	values := make(map[string]string)
-	file, err := os.Open(path)
-	if err != nil {
-		return values
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		value = strings.TrimSpace(value)
-		value = strings.Trim(value, `"'`)
-		values[strings.TrimSpace(key)] = value
-	}
-	return values
 }
 
 func escapeKey(key string) string {

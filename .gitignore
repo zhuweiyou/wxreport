@@ -1,7 +1,9 @@
 .DS_Store
+# 根目录编译产物
+/wxreport
+/wxreport.exe
 logs/
 # 本机数据目录：topics.json 持久，报告在 reports/，其余中间产物可随时删（只忽略根目录 data/）
 /data/
-# 本机私有配置（账号、群 ID、群名、OSS 密钥），不进入仓库
-config/local.env
-config/oss.env
+# 本机私有配置（账号、群 ID、群名、模型、OSS 密钥），不进入仓库
+.env

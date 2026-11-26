@@ -236,6 +236,33 @@ func TestRenderReportFromState(t *testing.T) {
 	}
 }
 
+func TestRenderNoParticipants(t *testing.T) {
+	st := &State{
+		Version:  Version,
+		Chat:     "test@chatroom",
+		ChatName: "测试群",
+		Topics: []Topic{{
+			ID:         "t1",
+			Title:      "话题一",
+			Summary:    "`甲` 说了几句。",
+			MessageIDs: []string{"m1"},
+		}},
+	}
+	export := testExport(testMessage(1, "m1", 1000, "甲", "a"))
+
+	markdown, _, err := Render(st, export, RenderOptions{
+		ChatName:       "测试群",
+		Top:            10,
+		NoParticipants: true,
+	})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if strings.Contains(markdown, "参与者：") {
+		t.Fatalf("participants should be omitted:\n%s", markdown)
+	}
+}
+
 func TestSaveLoadRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state", "topics.json")
 	st := &State{

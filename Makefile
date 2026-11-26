@@ -1,9 +1,12 @@
 GO ?= go
 
-.PHONY: test clean
+.PHONY: build test clean
+
+build:
+	$(GO) build -o . ./cmd/wxreport
 
 test:
 	$(GO) test ./...
 
 clean:
-	rm -rf bin
+	rm -f wxreport wxreport.exe

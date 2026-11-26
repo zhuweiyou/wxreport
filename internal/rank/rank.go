@@ -96,7 +96,7 @@ type Result struct {
 	Warnings []string
 }
 
-// Process 在没有消息明细时按参与者消息数排序（兼容旧报告）。
+// Process 在没有消息明细时按参与者消息数排序（手动 rank 预览用）。
 func Process(markdown string, top int) (string, Result, error) {
 	return process(markdown, top, nil)
 }

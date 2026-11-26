@@ -28,7 +28,10 @@ const (
 	maxActiveMessagesPerTopic = 120
 )
 
-var leftoverResRe = regexp.MustCompile(`\[\[res:\d+\]\]`)
+var (
+	leftoverResRe       = regexp.MustCompile(`\[\[res:\d+\]\]`)
+	participantOutputRe = regexp.MustCompile(`(?m)^参与者[：:].*(?:\r?\n|$)`)
+)
 
 // Resource 是话题引用的一个资源。
 type Resource struct {
@@ -593,8 +596,9 @@ func Apply(st *State, plan *Plan, update *Update, export *rank.Export) (*State, 
 
 // RenderOptions 控制报告渲染。
 type RenderOptions struct {
-	ChatName string
-	Top      int
+	ChatName       string
+	Top            int
+	NoParticipants bool
 }
 
 // Render 把状态和当前 24h 导出渲染成最终报告；排序、参与者由 rank 完成。
@@ -688,6 +692,9 @@ func Render(st *State, export *rank.Export, opts RenderOptions) (string, rank.Re
 	if err != nil {
 		return "", rank.Result{}, err
 	}
+	if opts.NoParticipants {
+		output = participantOutputRe.ReplaceAllString(output, "")
+	}
 	result.Warnings = append(result.Warnings, warnings...)
 	return output, result, nil
 }
@@ -753,7 +760,7 @@ func maxTopicID(topics []Topic) int {
 }
 
 func formatTime(ts int64) string {
-	return time.Unix(ts, 0).Format("2006-01-02 15:04")
+	return time.Unix(ts, 0).Format("01-02 15:04")
 }
 
 func joinIndices(indices []int) string {
