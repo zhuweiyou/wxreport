@@ -33,9 +33,3 @@ release:
 # changelog
 changelog:
   sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^chore:"
-      - "^ci:"
-      - "^test:"
