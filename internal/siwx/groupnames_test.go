@@ -1,11 +1,13 @@
 package siwx
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"testing"
+
+	_ "modernc.org/sqlite"
 )
 
 func appendTestVarint(dst []byte, value uint64) []byte {
@@ -72,22 +74,23 @@ func TestParseGroupMembers(t *testing.T) {
 }
 
 func TestLoadGroupNickNamesFromSQLite(t *testing.T) {
-	sqlite3, err := exec.LookPath("sqlite3")
-	if err != nil {
-		t.Skip("sqlite3 不可用")
-	}
 	dbPath := filepath.Join(t.TempDir(), "contact.db")
 	blob := testGroupBlob(
 		[2]string{"wxid_test_member_a", "测试成员A"},
 		[2]string{"wxid_test_member_b", "测试成员B"},
 	)
-	sql := fmt.Sprintf(
+	statement := fmt.Sprintf(
 		"CREATE TABLE chat_room(username TEXT, ext_buffer BLOB); "+
 			"INSERT INTO chat_room VALUES('12345678901@chatroom', X'%s');",
 		hex.EncodeToString(blob),
 	)
-	if output, err := exec.Command(sqlite3, dbPath, sql).CombinedOutput(); err != nil {
-		t.Fatalf("创建测试库: %v\n%s", err, output)
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(dbPath))
+	if err != nil {
+		t.Fatalf("打开测试库: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(statement); err != nil {
+		t.Fatalf("创建测试库: %v", err)
 	}
 
 	members, err := loadGroupNickNames(dbPath, "12345678901@chatroom")

@@ -7,7 +7,7 @@
 ```
 cmd/wxreport/                  CLI：常驻定时 / --once 单次
 internal/pipeline/             固定顺序编排整条流程（Steps 接口可注入 fake）
-internal/siwx/                 SIWX HTTP API：DB 刷新、消息导出、昵称解析
+internal/siwx/                 SIWX HTTP API：DB 刷新、消息导出、昵称解析、SQLite 读取
 internal/state/                增量状态：计划、差异合并
 internal/report/               报告渲染：Markdown、HTML、报告选择
 internal/summarize/            OpenAI 兼容接口调用与总结提示词
@@ -143,6 +143,7 @@ OSS 上传由 `internal/oss`：
 - 消息接口单页最多 300 条；导出用 `before` 自动向前翻页拿到完整窗口
 - SIWX 不会自动解密最新写入的消息库，所以每次执行先刷新
 - SIWX 未返回解密输出目录时，使用 `SIWX_OUTPUT_ROOT`
+- SQLite 通过 `modernc.org/sqlite` 纯 Go 驱动读取，不依赖系统 `sqlite3`
 - 刷新失败按 fail-fast 停止本次执行，下一轮再试
 
 ## 失败处理
