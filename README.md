@@ -15,8 +15,8 @@
 
 ## 快速开始
 
-1. 从 [Releases](https://github.com/zhuweiyou/wxreport/releases) 下载对应平台的 `wxreport_*`（Windows 为 `wxreport_*.exe`），放到一个独立目录。
-2. 在同一目录创建 `.env`（可复制 Release 附带的 `env.example` 或仓库的 `.env.example`），至少填写：
+1. 从 [Releases](https://github.com/zhuweiyou/wxreport/releases) 下载对应平台的 `wxreport_*.zip`，解压到独立目录；压缩包内包含 `wxreport`（Windows 为 `wxreport.exe`）和 `.env.example`。
+2. 把 `.env.example` 复制为 `.env` 并编辑（macOS/Linux 下是隐藏文件，可用 `ls -a` 查看），至少填写：
 
 ```ini
 SIWX_ACCOUNT=wxid_xxxxxxxxxxxx
@@ -43,7 +43,7 @@ data/reports/<YYYYMMDDHHMMSS>.md   每轮 Markdown 报告
 data/latest-report.png             最近一次长图
 ```
 
-程序在哪个目录启动，就读取该目录的 `.env`，并把 `data/` 写在该目录。
+程序在哪个目录启动，就读取该目录的 `.env`，并把 `data/` 写在该目录。从源码运行时，复制 `.env.example` 为 `.env` 即可。
 
 ## 配置
 

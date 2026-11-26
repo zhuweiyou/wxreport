@@ -188,7 +188,7 @@ go test ./internal/pipeline    # 只测编排
 1. `actions/setup-go` 按 `go.mod` 安装 Go
 2. `golangci-lint run ./...` + `go test ./...`
 3. 创建并推送 tag
-4. GoReleaser 构建 darwin/windows × amd64/arm64 二进制，并附带 `env.example`
+4. GoReleaser 构建 darwin/windows × amd64/arm64 的 zip；包内是 `wxreport`（Windows 为 `wxreport.exe`）和 `.env.example`，版本只出现在 zip 文件名
 5. Release notes 自动从提交记录生成，不排除任何提交
 
 ## 代码约定

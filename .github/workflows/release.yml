@@ -49,10 +49,3 @@ jobs:
           args: release --clean --skip-validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload env.example
-        run: |
-          cp .env.example env.example
-          gh release upload "${{ github.event.inputs.version }}" env.example --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

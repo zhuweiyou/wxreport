@@ -18,7 +18,9 @@ builds:
 
 # archives
 archives:
-  - format: binary
+  - format: zip
+    files:
+      - .env.example
 
 # checksum
 checksum:
