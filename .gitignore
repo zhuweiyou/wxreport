@@ -4,6 +4,7 @@
 # 根目录编译产物
 /wxreport
 /wxreport.exe
+dist/
 logs/
 # 本机数据目录：topics.json 持久，报告在 reports/，其余中间产物可随时删（只忽略根目录 data/）
 /data/
