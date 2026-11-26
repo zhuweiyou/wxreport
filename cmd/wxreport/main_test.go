@@ -16,6 +16,21 @@ func TestSchedulerAcceptsSixFields(t *testing.T) {
 	}
 }
 
+func TestLoadLocationFallback(t *testing.T) {
+	t.Setenv("WXREPORT_TIMEZONE", "")
+	name, loc, err := loadLocation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if name != "UTC+8" {
+		t.Fatalf("name = %q", name)
+	}
+	_, offset := time.Now().In(loc).Zone()
+	if offset != 8*3600 {
+		t.Fatalf("offset = %d, want %d", offset, 8*3600)
+	}
+}
+
 func TestEnvBool(t *testing.T) {
 	if envBool("WXREPORT_TEST_UNSET", false) {
 		t.Fatal("未设置时应返回默认值 false")

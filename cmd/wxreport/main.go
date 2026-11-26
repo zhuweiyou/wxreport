@@ -157,13 +157,13 @@ func newScheduler(loc *time.Location, logger cron.Logger) *cron.Cron {
 }
 
 func loadLocation() (string, *time.Location, error) {
-	name := os.Getenv("WXREPORT_TIMEZONE")
+	name := strings.TrimSpace(os.Getenv("WXREPORT_TIMEZONE"))
 	if name == "" {
-		name = "Asia/Shanghai"
+		return "UTC+8", time.FixedZone("UTC+8", 8*3600), nil
 	}
 	loc, err := time.LoadLocation(name)
 	if err != nil {
-		return "", nil, fmt.Errorf("时区 %s: %w", name, err)
+		return "UTC+8", time.FixedZone("UTC+8", 8*3600), nil
 	}
 	return name, loc, nil
 }
