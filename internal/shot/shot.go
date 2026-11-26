@@ -15,6 +15,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -193,6 +194,20 @@ func FindChrome(explicit string) (string, error) {
 	}
 	if env := os.Getenv("CHROME_PATH"); env != "" {
 		candidates = append(candidates, env)
+	}
+	if local := os.Getenv("LOCALAPPDATA"); local != "" {
+		candidates = append(candidates,
+			filepath.Join(local, "Google", "Chrome", "Application", "chrome.exe"),
+			filepath.Join(local, "Microsoft", "Edge", "Application", "msedge.exe"),
+		)
+	}
+	for _, env := range []string{"ProgramFiles", "ProgramFiles(x86)"} {
+		if dir := os.Getenv(env); dir != "" {
+			candidates = append(candidates,
+				filepath.Join(dir, "Google", "Chrome", "Application", "chrome.exe"),
+				filepath.Join(dir, "Microsoft", "Edge", "Application", "msedge.exe"),
+			)
+		}
 	}
 	candidates = append(candidates,
 		`C:\Program Files\Google\Chrome\Application\chrome.exe`,

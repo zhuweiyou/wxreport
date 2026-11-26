@@ -23,6 +23,7 @@ type Options struct {
 	ChatName       string
 	Top            int
 	NoParticipants bool
+	Location       *time.Location
 }
 
 // Render 把状态和当前 24h 导出渲染成最终报告；排序、参与者由 rank 完成。
@@ -62,7 +63,7 @@ func Render(st *reportstate.State, export *rank.Export, opts Options) (string, r
 
 	var builder strings.Builder
 	fmt.Fprintf(&builder, "# 「%s」24 小时话题 TOP10\n\n", chatName)
-	fmt.Fprintf(&builder, "- 统计窗口：%s ~ %s\n", formatTime(export.Start), formatTime(export.End))
+	fmt.Fprintf(&builder, "- 统计窗口：%s ~ %s\n", formatTime(export.Start, opts.Location), formatTime(export.End, opts.Location))
 	fmt.Fprintf(&builder, "- 消息总数：%d\n", export.Total)
 	fmt.Fprintf(&builder, "- 参与人数：%d\n\n", export.Participants)
 
@@ -123,8 +124,11 @@ func Render(st *reportstate.State, export *rank.Export, opts Options) (string, r
 	return output, result, nil
 }
 
-func formatTime(ts int64) string {
-	return time.Unix(ts, 0).Format("01-02 15:04")
+func formatTime(ts int64, loc *time.Location) string {
+	if loc == nil {
+		loc = time.Local
+	}
+	return time.Unix(ts, 0).In(loc).Format("01-02 15:04")
 }
 
 func joinIndices(indices []int) string {

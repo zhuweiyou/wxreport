@@ -84,6 +84,10 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
+	_, loc, err := loadLocation()
+	if err != nil {
+		return err
+	}
 
 	result, err := pipeline.Run(ctx, pipeline.Options{
 		Root:           root,
@@ -95,6 +99,7 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 		NoParticipants: !envBool("WXREPORT_PARTICIPANTS", true),
 		Compress:       envBool("WXREPORT_COMPRESS", true),
 		Title:          os.Getenv("WXREPORT_TITLE"),
+		Location:       loc,
 	}, liveSteps{summarizer: summarize.New(cfg)}, stdout)
 	if err != nil {
 		return err
@@ -112,13 +117,9 @@ func runDaemon(ctx context.Context, root string, stdout, stderr io.Writer) error
 	if schedule == "" {
 		schedule = "0 0 0,4,8,12,16,20 * * *"
 	}
-	timezone := os.Getenv("WXREPORT_TIMEZONE")
-	if timezone == "" {
-		timezone = "Asia/Shanghai"
-	}
-	loc, err := time.LoadLocation(timezone)
+	timezone, loc, err := loadLocation()
 	if err != nil {
-		return fmt.Errorf("时区 %s: %w", timezone, err)
+		return err
 	}
 
 	logger := cron.PrintfLogger(log.New(stderr, "", log.LstdFlags))
@@ -153,6 +154,18 @@ func newScheduler(loc *time.Location, logger cron.Logger) *cron.Cron {
 		cron.WithChain(cron.SkipIfStillRunning(logger)),
 		cron.WithLogger(logger),
 	)
+}
+
+func loadLocation() (string, *time.Location, error) {
+	name := os.Getenv("WXREPORT_TIMEZONE")
+	if name == "" {
+		name = "Asia/Shanghai"
+	}
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		return "", nil, fmt.Errorf("时区 %s: %w", name, err)
+	}
+	return name, loc, nil
 }
 
 func envBool(key string, fallback bool) bool {

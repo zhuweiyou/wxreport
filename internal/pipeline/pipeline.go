@@ -34,6 +34,7 @@ type Options struct {
 	NoParticipants bool
 	Compress       bool
 	Title          string
+	Location       *time.Location
 }
 
 // Result 是一次运行的产物摘要。
@@ -145,11 +146,16 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		ChatName:       opts.ChatName,
 		Top:            10,
 		NoParticipants: opts.NoParticipants,
+		Location:       opts.Location,
 	})
 	if err != nil {
 		return Result{}, fmt.Errorf("report: %w", err)
 	}
-	slug := time.Unix(end, 0).Format("20060102150405")
+	endTime := time.Unix(end, 0)
+	if opts.Location != nil {
+		endTime = endTime.In(opts.Location)
+	}
+	slug := endTime.Format("20060102150405")
 	reportPath := filepath.Join(reportsDir, slug+".md")
 	if err := fsutil.WriteStringAtomic(reportPath, markdown, 0o644); err != nil {
 		return Result{}, fmt.Errorf("写报告: %w", err)

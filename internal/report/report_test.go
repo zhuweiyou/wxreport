@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"wxreport/internal/rank"
 	reportstate "wxreport/internal/state"
@@ -161,6 +162,29 @@ func TestRenderDeduplicatesResourcesAndHasNoLimit(t *testing.T) {
 	}
 	if defs != 12 {
 		t.Errorf("resource definitions = %d, want 12 (dedupe + no 10 cap)\n%s", defs, markdown)
+	}
+}
+
+func TestRenderUsesLocation(t *testing.T) {
+	st := &reportstate.State{
+		Version:  reportstate.Version,
+		ChatName: "测试群",
+		Topics: []reportstate.Topic{{
+			ID:         "t1",
+			Title:      "话题",
+			Summary:    "`甲` 说。",
+			MessageIDs: []string{"m1"},
+		}},
+	}
+	export := testExport(testMessage(1, "m1", 1000, "甲", "a"))
+	loc := time.FixedZone("UTC+8", 8*3600)
+
+	markdown, _, err := Render(st, export, Options{Location: loc})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(markdown, "01-01 08:00 ~ 01-01 10:46") {
+		t.Fatalf("window should use configured location:\n%s", markdown)
 	}
 }
 

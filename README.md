@@ -58,7 +58,7 @@ data/latest-report.png             最近一次长图
 | `OPENAI_API_KEY` | 接口密钥，必填 |
 | `OPENAI_MODEL` | 模型名，必填 |
 | `WXREPORT_CRON` | 定时计划，默认 `0 0 0,4,8,12,16,20 * * *`（6 段，含秒） |
-| `WXREPORT_TIMEZONE` | 时区，默认 `Asia/Shanghai` |
+| `WXREPORT_TIMEZONE` | 时区（daemon 计划与报告时间），默认 `Asia/Shanghai` |
 | `WXREPORT_UPLOAD` | 是否上传 OSS，默认 `false` |
 | `WXREPORT_PARTICIPANTS` | 是否输出每话题参与者名单，默认 `true` |
 | `WXREPORT_COMPRESS` | 是否压缩长图，默认 `true`；失败或压不小则保留原图 |
