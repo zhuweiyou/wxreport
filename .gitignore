@@ -10,3 +10,5 @@ logs/
 /data/
 # 本机私有配置（账号、群 ID、群名、模型、OSS 密钥），不进入仓库
 .env
+# daemon 运行时 pid
+.wxreport.pid
