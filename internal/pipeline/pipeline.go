@@ -13,6 +13,7 @@ import (
 
 	"wxreport/internal/compress"
 	"wxreport/internal/fsutil"
+	"wxreport/internal/oss"
 	"wxreport/internal/rank"
 	"wxreport/internal/shot"
 	"wxreport/internal/siwx"
@@ -193,7 +194,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	if opts.NoUpload {
 		return result, nil
 	}
-	cfg, err := shot.LoadOSSConfig(opts.Root)
+	cfg, err := oss.LoadConfig(opts.Root)
 	if err != nil {
 		_, _ = fmt.Fprintf(stdout, "未配置 OSS，跳过上传（本地图片已生成）：%v\n", err)
 		return result, nil
@@ -205,7 +206,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	if objectPath == "" {
 		objectPath = "latest-report.png"
 	}
-	publicURL, err := shot.Upload(cfg, objectPath, pngData)
+	publicURL, err := oss.Upload(cfg, objectPath, pngData)
 	if err != nil {
 		return Result{}, err
 	}

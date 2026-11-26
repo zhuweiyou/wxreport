@@ -1,4 +1,4 @@
-package shot
+package oss
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestLoadOSSConfigFromLocalEnv(t *testing.T) {
+func TestLoadConfigFromLocalEnv(t *testing.T) {
 	for _, key := range []string{
 		"OSS_BUCKET", "OSS_ACCESS_KEY_ID", "OSS_ACCESS_KEY_SECRET", "OSS_PATH",
 		"OSS_REGION", "OSS_ENDPOINT", "OSS_DOMAIN", "OSS_PUBLIC_BASE",
@@ -21,7 +21,7 @@ func TestLoadOSSConfigFromLocalEnv(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := LoadOSSConfig(root)
+	cfg, err := LoadConfig(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestLoadOSSConfigFromLocalEnv(t *testing.T) {
 }
 
 func TestPublicURL(t *testing.T) {
-	cfg := OSSConfig{Bucket: "bucket", Endpoint: "https://oss-cn-shanghai.aliyuncs.com"}
+	cfg := Config{Bucket: "bucket", Endpoint: "https://oss-cn-shanghai.aliyuncs.com"}
 	if got := cfg.PublicURL("latest-report.png"); got != "https://bucket.oss-cn-shanghai.aliyuncs.com/latest-report.png" {
 		t.Fatalf("url = %s", got)
 	}

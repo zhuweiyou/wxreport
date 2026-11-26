@@ -1,6 +1,5 @@
-// Package shot 的 OSS 上传部分。配置优先级：环境变量优先，
-// 其次读取 .env（该文件已被 .gitignore 忽略）。
-package shot
+// Package oss 负责报告长图的阿里云 OSS 上传。
+package oss
 
 import (
 	"bytes"
@@ -11,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/joho/godotenv"
 )
 
-// OSSConfig 是阿里云 OSS 的上传配置。
-type OSSConfig struct {
+// Config 是阿里云 OSS 的上传配置。
+type Config struct {
 	Bucket          string
 	Region          string
 	Endpoint        string
@@ -28,8 +27,8 @@ type OSSConfig struct {
 	Path string
 }
 
-// LoadOSSConfig 读取 OSS 配置：环境变量优先，其次 .env。
-func LoadOSSConfig(root string) (OSSConfig, error) {
+// LoadConfig 读取 OSS 配置：环境变量优先，其次 .env。
+func LoadConfig(root string) (Config, error) {
 	values, err := godotenv.Read(filepath.Join(root, ".env"))
 	if err != nil {
 		values = map[string]string{}
@@ -63,7 +62,7 @@ func LoadOSSConfig(root string) (OSSConfig, error) {
 		endpoint = "https://" + endpoint
 	}
 
-	cfg := OSSConfig{
+	cfg := Config{
 		Bucket:          get("OSS_BUCKET"),
 		Region:          region,
 		Endpoint:        endpoint,
@@ -84,7 +83,7 @@ func LoadOSSConfig(root string) (OSSConfig, error) {
 		missing = append(missing, "OSS_ACCESS_KEY_SECRET")
 	}
 	if len(missing) > 0 {
-		return OSSConfig{}, fmt.Errorf(
+		return Config{}, fmt.Errorf(
 			"缺少 OSS 配置 %s；可设置环境变量，或写入 %s",
 			strings.Join(missing, " / "),
 			filepath.Join(root, ".env"),
@@ -94,7 +93,7 @@ func LoadOSSConfig(root string) (OSSConfig, error) {
 }
 
 // PublicURL 返回对象的公网访问地址。
-func (cfg OSSConfig) PublicURL(objectPath string) string {
+func (cfg Config) PublicURL(objectPath string) string {
 	objectPath = strings.TrimLeft(objectPath, "/")
 	if cfg.PublicBase != "" {
 		base := strings.TrimRight(cfg.PublicBase, "/")
@@ -111,13 +110,13 @@ func (cfg OSSConfig) PublicURL(objectPath string) string {
 }
 
 // Upload 上传 PNG 到指定路径；同名对象直接覆盖。
-func Upload(cfg OSSConfig, objectPath string, data []byte) (string, error) {
+func Upload(cfg Config, objectPath string, data []byte) (string, error) {
 	objectPath = strings.TrimLeft(strings.TrimSpace(objectPath), "/")
 	if objectPath == "" {
 		return "", fmt.Errorf("OSS 上传路径不能为空")
 	}
 
-	client, err := oss.New(cfg.Endpoint, cfg.AccessKeyID, cfg.AccessKeySecret)
+	client, err := aliyunoss.New(cfg.Endpoint, cfg.AccessKeyID, cfg.AccessKeySecret)
 	if err != nil {
 		return "", fmt.Errorf("创建 OSS 客户端: %w", err)
 	}
@@ -127,11 +126,11 @@ func Upload(cfg OSSConfig, objectPath string, data []byte) (string, error) {
 	}
 
 	err = bucket.PutObject(objectPath, bytes.NewReader(data),
-		oss.ContentType("image/png"),
+		aliyunoss.ContentType("image/png"),
 		// 固定地址覆盖后必须让客户端重新拉取：no-store 连缓存副本都不留。
-		oss.CacheControl("no-store, no-cache, must-revalidate, max-age=0"),
-		oss.Expires(time.Unix(0, 0).UTC()),
-		oss.ContentLength(int64(len(data))),
+		aliyunoss.CacheControl("no-store, no-cache, must-revalidate, max-age=0"),
+		aliyunoss.Expires(time.Unix(0, 0).UTC()),
+		aliyunoss.ContentLength(int64(len(data))),
 	)
 	if err != nil {
 		return "", fmt.Errorf("上传 OSS %s: %w", objectPath, err)

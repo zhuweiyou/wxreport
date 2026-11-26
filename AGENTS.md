@@ -11,7 +11,8 @@ internal/siwx/                 SIWX HTTP API：DB 刷新、消息导出、昵称
 internal/state/                增量状态：计划、差异合并、报告渲染
 internal/summarize/            OpenAI 兼容接口调用与总结提示词
 internal/rank/                 话轮模型：话轮、有效参与人数、文字/密集度
-internal/shot/                长图：Markdown 渲染、headless 截图、可选 OSS 上传
+internal/shot/                长图：Markdown 渲染、headless 截图
+internal/oss/                  阿里云 OSS 上传
 internal/compress/             本地 256 色 PNG 压缩
 internal/fsutil/               原子写入
 .env.example                   配置模板
@@ -118,7 +119,10 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 - headless Chrome 截图，样式在 `internal/shot/render.go`
 - 顶部使用 `render.go` 里的固定标题，不跟随 Markdown 的 `#` 标题
 - 默认输出 `data/latest-report.png`
-- OSS 上传默认关闭，`WXREPORT_UPLOAD=true` 且 `OSS_*` 完整时才上传
+
+OSS 上传由 `internal/oss`：
+
+- 默认关闭，`WXREPORT_UPLOAD=true` 且 `OSS_*` 完整时才上传
 
 压缩由 `internal/compress`：
 
