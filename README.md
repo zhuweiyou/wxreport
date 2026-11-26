@@ -130,7 +130,7 @@ make test                      # 全部测试
 go test ./internal/pipeline    # 只测编排
 ```
 
-发布：在 GitHub Actions 手动触发 `release` workflow，填写版本号（如 `v0.4.0`）和说明。构建前会先跑 `go vet ./...` 和 `go test ./...`，通过后由 GoReleaser 构建 Linux/macOS/Windows 的 amd64/arm64 二进制并上传到 Release。
+发布：在 GitHub Actions 手动触发 `release` workflow，只填版本号（如 `v0.4.0`）。构建前会先跑 `go vet ./...` 和 `go test ./...`，通过后由 GoReleaser 构建 Linux/macOS/Windows 的 amd64/arm64 二进制并上传到 Release，Release notes 从提交记录自动生成。
 
 ## 单次执行流程
 

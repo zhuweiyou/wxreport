@@ -27,11 +27,15 @@ checksum:
 
 # release
 release:
-  header: |
-    {{ .Env.RELEASE_DESCRIPTION }}
   draft: false
   prerelease: false
 
 # changelog
 changelog:
-  skip: true
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^ci:"
+      - "^test:"
