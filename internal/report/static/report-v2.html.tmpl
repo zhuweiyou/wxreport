@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <style>{{.FontCSS}}</style>
+    <style>{{.CSS}}</style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div class="hero__eyebrow">24 小时话题报告</div>
+        <h1 class="hero__title">{{.ChatName}}</h1>
+        <div class="hero__window">{{.WindowStart}} — {{.WindowEnd}}</div>
+        <div class="stats">
+          <div class="stat"><b>{{.MessageTotal}}</b><span>条消息</span></div>
+          <div class="stat"><b>{{.ParticipantTotal}}</b><span>人参与</span></div>
+          <div class="stat"><b>{{.TopicCount}}</b><span>个话题</span></div>
+        </div>
+      </header>
+
+      <section class="topics">
+        {{range .Topics}}
+        <article class="topic">
+          <div class="topic__head">
+            <span class="topic__no">{{printf "%02d" .Rank}}</span>
+            <h2 class="topic__title">{{.Title}}</h2>
+          </div>
+          {{if .Commentary}}<p class="topic__commentary">{{.Commentary}}</p>{{end}}
+          <p class="topic__summary">{{range .Segments}}{{if eq .Kind "person"}}<span class="person">{{.Text}}</span>{{else if eq .Kind "resource"}}<a class="res-ref" href="{{.URL}}">[{{.Index}}]</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+          {{if .Participants}}
+          <div class="topic__people">
+            {{range .Participants}}<span class="person-chip">{{.Name}}<i>{{.Count}}</i></span>{{end}}
+          </div>
+          {{end}}
+        </article>
+        {{end}}
+      </section>
+
+      {{if .Resources}}
+      <section class="resources">
+        <h2 class="resources__title">资源列表</h2>
+        {{range .Resources}}<a class="res res--full" href="{{.URL}}"><span class="res__idx">{{.Index}}</span><span class="res__body"><span class="res__title">{{.Title}}</span><span class="res__url">{{.URL}}</span></span></a>{{end}}
+      </section>
+      {{end}}
+    </main>
+  </body>
+</html>
