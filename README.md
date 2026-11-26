@@ -15,7 +15,7 @@
 ## 快速开始
 
 1. 从 [Releases](https://github.com/zhuweiyou/wxreport/releases) 下载对应平台的 `wxreport_*`（Windows 为 `wxreport_*.exe`），放到一个独立目录。
-2. 在同一目录创建 `.env`（可复制仓库里的 `.env.example`），至少填写：
+2. 在同一目录创建 `.env`（可复制 Release 附带的 `env.example` 或仓库的 `.env.example`），至少填写：
 
 ```ini
 SIWX_ACCOUNT=wxid_xxxxxxxxxxxx
