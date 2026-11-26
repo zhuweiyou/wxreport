@@ -28,9 +28,6 @@ checksum:
 release:
   draft: false
   prerelease: false
-  extra_files:
-    - glob: .env.example
-      name: env.example
 
 # changelog
 changelog:
