@@ -1,2 +1,0 @@
-[agents]
-mcpServers = { stories-in-wx = { args = ["mcp"], command = "/Applications/stories-in-wx.app/Contents/MacOS/stories-in-wx", enabled = true, transport = "stdio" } }
