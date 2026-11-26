@@ -97,9 +97,11 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 
 导出阶段把 `sender_wxid` 解析成安全昵称，优先级：
 
-1. 群昵称：`contact.db` 的 `chat_room.ext_buffer`（protobuf 成员列表）
-2. 微信昵称：`contact.nick_name`
-3. wxid：前两者为空或全是不可见字符时回退
+1. 微信昵称：`contact.nick_name`
+2. 群昵称：`contact.db` 的 `chat_room.ext_buffer`（protobuf 成员列表）
+3. wxid：前两者都不可见时回退
+
+「不可见」指整串只包含空白、换行、控制符、零宽/格式字符、组合标记和常见空白填充字符（如 `ㅤ`、U+2800）。微信昵称常被写成这种占位形式，此时自动改用群昵称。
 
 **`remark` 字段完全不会被读取**，报告中不可能出现备注名。
 

@@ -63,20 +63,39 @@ func TestPreferredNameNeverUsesRemark(t *testing.T) {
 		SenderName: "备注名",
 		SenderWxid: "wxid_abc",
 	}
+	group := map[string]string{"wxid_abc": "群昵称"}
+	nick := map[string]string{"wxid_abc": "微信昵称"}
+
 	if name := preferredName(message, nil, nil); name != "wxid_abc" {
 		t.Errorf("fallback name = %q, want wxid_abc", name)
 	}
-	if name := preferredName(message, nil, map[string]string{"wxid_abc": "微信昵称"}); name != "微信昵称" {
+	if name := preferredName(message, nil, nick); name != "微信昵称" {
 		t.Errorf("nick_name = %q, want 微信昵称", name)
 	}
-	if name := preferredName(message, nil, map[string]string{"wxid_abc": "ㅤ"}); name != "wxid_abc" {
-		t.Errorf("invisible nick_name = %q, want wxid_abc", name)
+	// 微信昵称优先于群昵称。
+	if name := preferredName(message, group, nick); name != "微信昵称" {
+		t.Errorf("preferred name = %q, want 微信昵称", name)
 	}
-	if name := preferredName(message, map[string]string{"wxid_abc": "群昵称"}, map[string]string{"wxid_abc": "微信昵称"}); name != "群昵称" {
-		t.Errorf("group nickname = %q, want 群昵称", name)
+	// 微信昵称全是不可见字符时回退群昵称。
+	invisibleNicks := []string{
+		"\u3164",
+		"\u200B\u200B",
+		"\n\t ",
+		"\u2800",
+		"\u115F\u1160",
 	}
-	if name := preferredName(message, map[string]string{"wxid_abc": "ㅤ"}, map[string]string{"wxid_abc": "微信昵称"}); name != "微信昵称" {
+	for _, invisible := range invisibleNicks {
+		if name := preferredName(message, group, map[string]string{"wxid_abc": invisible}); name != "群昵称" {
+			t.Errorf("invisible nick_name %q = %q, want 群昵称", invisible, name)
+		}
+	}
+	// 群昵称不可见时继续用可见的微信昵称。
+	if name := preferredName(message, map[string]string{"wxid_abc": "\u3164"}, nick); name != "微信昵称" {
 		t.Errorf("invisible group nickname = %q, want 微信昵称", name)
+	}
+	// 两者都不可见时回退 wxid。
+	if name := preferredName(message, map[string]string{"wxid_abc": "  "}, map[string]string{"wxid_abc": "\u200B"}); name != "wxid_abc" {
+		t.Errorf("all invisible = %q, want wxid_abc", name)
 	}
 }
 

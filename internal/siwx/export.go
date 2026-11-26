@@ -116,9 +116,10 @@ func Export(account, chat string, start, end int64, out string) (ExportStats, er
 	return ExportStats{Total: len(exported), Participants: len(senders), Output: out}, nil
 }
 
-// preferredName 优先群昵称，其次微信昵称，最后回退到 wxid；绝不使用备注。
+// preferredName 优先微信昵称，其次群昵称，最后回退到 wxid；绝不使用备注。
+// 微信昵称常见「全是零宽字符/换行/空格」的占位写法，这类名字会被跳过。
 func preferredName(message chatMessage, groupNames, nickNames map[string]string) string {
-	for _, name := range []string{groupNames[message.SenderWxid], nickNames[message.SenderWxid]} {
+	for _, name := range []string{nickNames[message.SenderWxid], groupNames[message.SenderWxid]} {
 		if meaningfulName(name) {
 			return strings.TrimSpace(name)
 		}
