@@ -25,9 +25,9 @@ func querySQLite(dbPath, separator, query string) (string, error) {
 	if tempErr != nil {
 		return "", err
 	}
-	defer os.Remove(temp.Name())
+	defer func() { _ = os.Remove(temp.Name()) }()
 	if _, writeErr := temp.Write(data); writeErr != nil {
-		temp.Close()
+		_ = temp.Close()
 		return "", err
 	}
 	if closeErr := temp.Close(); closeErr != nil {

@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
-	"html"
+	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,6 +19,12 @@ import (
 
 //go:embed static/github-markdown-light.css
 var githubMarkdownCSS string
+
+//go:embed static/report.css
+var reportCSS string
+
+//go:embed static/report.html.tmpl
+var reportTemplateSource string
 
 //go:embed static/NotoSansLepcha-Regular.ttf
 var lepchaFont []byte
@@ -48,51 +54,15 @@ var (
 	timestampRe      = regexp.MustCompile(`^\d{14}$`)
 )
 
-const reportCSS = `
-html, body { margin: 0; padding: 0; background: #f6f8fa; }
-main.markdown-body {
-  box-sizing: border-box;
-  min-width: 200px;
-  max-width: 980px;
-  margin: 24px auto;
-  padding: 45px;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
-  border-radius: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Shot Lepcha", "Shot Tai Tham",
-    "Microsoft Himalaya", "Kailasa", "Apple Color Emoji", "Segoe UI Emoji",
-    "Noto Color Emoji", sans-serif;
+var reportTemplate = template.Must(template.New("report").Parse(reportTemplateSource))
+
+type reportPage struct {
+	Title       string
+	RareFontCSS template.CSS
+	GitHubCSS   template.CSS
+	ReportCSS   template.CSS
+	Body        template.HTML
 }
-@media (max-width: 767px) {
-  main.markdown-body {
-    margin: 0;
-    padding: 15px;
-    border: 0;
-    border-radius: 0;
-  }
-}
-main.markdown-body .report-title {
-  margin: 0 0 20px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #d8dee4;
-  font-size: 26px;
-  line-height: 1.25;
-  font-weight: 700;
-  text-align: center;
-  color: #1f2328;
-}
-main.markdown-body h2 { font-size: 18px; }
-main.markdown-body sup a { text-decoration: none; }
-main.markdown-body sup a::before { content: "["; }
-main.markdown-body sup a::after { content: "]"; }
-main.markdown-body .footnotes { font-size: 1em; color: #1f2328; margin-top: 8px; border-top: 0; }
-main.markdown-body .footnotes > hr { display: none; }
-main.markdown-body .footnotes ol { padding-left: 1.5em; }
-main.markdown-body .footnotes li { margin: 8px 0; }
-main.markdown-body .footnote-backref { display: none; }
-main.markdown-body .footnotes li > p > a[href^="http"] { color: #0969da; word-break: break-all; }
-`
 
 // report 是一篇待截图的 Markdown 报告。
 type report struct {
@@ -180,28 +150,25 @@ func renderHTML(rep report) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("读取报告 %s: %w", filepath.Base(rep.Path), err)
 	}
-	title := fixedTitle
 
 	var body bytes.Buffer
 	if err := markdownRenderer.Convert([]byte(stripFirstTitle(string(raw))), &body); err != nil {
 		return nil, fmt.Errorf("渲染 Markdown %s: %w", filepath.Base(rep.Path), err)
 	}
 
-	var page strings.Builder
-	page.WriteString(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">`)
-	page.WriteString(`<meta name="viewport" content="width=device-width, initial-scale=1">`)
-	page.WriteString(`<title>`)
-	page.WriteString(html.EscapeString(title))
-	page.WriteString(`</title><style>`)
-	page.WriteString(rareFontCSS)
-	page.WriteString(githubMarkdownCSS)
-	page.WriteString(reportCSS)
-	page.WriteString(`</style></head><body><main class="markdown-body"><div class="report-title">`)
-	page.WriteString(html.EscapeString(title))
-	page.WriteString(`</div>`)
-	page.WriteString(body.String())
-	page.WriteString(`</main></body></html>`)
-	return []byte(page.String()), nil
+	page := reportPage{
+		Title:       fixedTitle,
+		RareFontCSS: template.CSS(rareFontCSS),
+		GitHubCSS:   template.CSS(githubMarkdownCSS),
+		ReportCSS:   template.CSS(reportCSS),
+		// goldmark 默认转义原始 HTML，这里注入的是受信任的渲染结果。
+		Body: template.HTML(body.String()),
+	}
+	var out bytes.Buffer
+	if err := reportTemplate.Execute(&out, page); err != nil {
+		return nil, fmt.Errorf("渲染 HTML 模板: %w", err)
+	}
+	return out.Bytes(), nil
 }
 
 // stripFirstTitle 去掉 Markdown 的一级标题，页面标题单独渲染，避免重复。

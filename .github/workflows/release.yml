@@ -24,10 +24,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15.0
+
       - name: Check
-        run: |
-          go vet ./...
-          go test ./...
+        run: go test ./...
 
       - name: Create and push tag
         run: |

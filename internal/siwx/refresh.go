@@ -59,7 +59,7 @@ func Refresh(account string) error {
 		return fmt.Errorf("启动刷新任务失败: %w", err)
 	}
 	body, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
-	response.Body.Close()
+	_ = response.Body.Close()
 	if response.StatusCode == http.StatusConflict {
 		fmt.Println("已有刷新任务在运行，等待它完成…")
 	} else if response.StatusCode >= 300 {
@@ -105,7 +105,7 @@ func getJSON(client *http.Client, url string, target any) error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
 		return fmt.Errorf("HTTP %d %s", response.StatusCode, strings.TrimSpace(string(body)))

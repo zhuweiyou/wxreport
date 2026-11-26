@@ -83,18 +83,18 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	statePath := filepath.Join(dataDir, "topics.json")
 	reportsDir := filepath.Join(dataDir, "reports")
 
-	fmt.Fprintln(stdout, "== 刷新 DB 缓存 ==")
+	_, _ = fmt.Fprintln(stdout, "== 刷新 DB 缓存 ==")
 	if err := steps.Refresh(ctx, opts.Account); err != nil {
 		return Result{}, fmt.Errorf("refresh-db: %w", err)
 	}
 
-	fmt.Fprintln(stdout, "== 导出消息 ==")
+	_, _ = fmt.Fprintln(stdout, "== 导出消息 ==")
 	stats, err := steps.Export(ctx, opts.Account, opts.Chat, start, end, exportPath)
 	if err != nil {
 		return Result{}, fmt.Errorf("export: %w", err)
 	}
 	if stats.Total == 0 {
-		fmt.Fprintln(stdout, "过去 24 小时无消息，跳过本次报告。")
+		_, _ = fmt.Fprintln(stdout, "过去 24 小时无消息，跳过本次报告。")
 		return Result{Skipped: true}, nil
 	}
 
@@ -103,7 +103,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		return Result{}, err
 	}
 
-	fmt.Fprintln(stdout, "== 生成增量计划 ==")
+	_, _ = fmt.Fprintln(stdout, "== 生成增量计划 ==")
 	st, err := reportstate.Load(statePath)
 	if err != nil {
 		return Result{}, err
@@ -116,7 +116,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		return Result{}, fmt.Errorf("写计划: %w", err)
 	}
 
-	fmt.Fprintln(stdout, "== 模型总结 ==")
+	_, _ = fmt.Fprintln(stdout, "== 模型总结 ==")
 	update, err := steps.Summarize(ctx, plan)
 	if err != nil {
 		return Result{}, fmt.Errorf("总结: %w", err)
@@ -125,19 +125,19 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		return Result{}, fmt.Errorf("写入模型输出: %w", err)
 	}
 
-	fmt.Fprintln(stdout, "== 合并状态 ==")
+	_, _ = fmt.Fprintln(stdout, "== 合并状态 ==")
 	next, warnings, err := reportstate.Apply(st, plan, update, export)
 	if err != nil {
 		return Result{}, fmt.Errorf("state-apply: %w", err)
 	}
 	for _, warning := range warnings {
-		fmt.Fprintln(stdout, "警告:", warning)
+		_, _ = fmt.Fprintln(stdout, "警告:", warning)
 	}
 	if err := reportstate.Save(statePath, next); err != nil {
 		return Result{}, fmt.Errorf("保存状态: %w", err)
 	}
 
-	fmt.Fprintln(stdout, "== 生成报告 ==")
+	_, _ = fmt.Fprintln(stdout, "== 生成报告 ==")
 	markdown, rankResult, err := reportstate.Render(next, export, reportstate.RenderOptions{
 		ChatName:       opts.ChatName,
 		Top:            10,
@@ -152,7 +152,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	}
 	printRanking(stdout, rankResult)
 
-	fmt.Fprintln(stdout, "== 生成长图 ==")
+	_, _ = fmt.Fprintln(stdout, "== 生成长图 ==")
 	shotResult, err := steps.Shot(ctx, shot.Options{
 		ReportsDir: reportsDir,
 		Width:      shot.DefaultWidth,
@@ -166,11 +166,11 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		compressed, err := compress.PNG(pngData)
 		switch {
 		case err != nil:
-			fmt.Fprintf(stdout, "压缩失败，使用原图：%v\n", err)
+			_, _ = fmt.Fprintf(stdout, "压缩失败，使用原图：%v\n", err)
 		case len(compressed) >= len(pngData):
-			fmt.Fprintf(stdout, "压缩无收益（%d -> %d 字节），使用原图\n", len(pngData), len(compressed))
+			_, _ = fmt.Fprintf(stdout, "压缩无收益（%d -> %d 字节），使用原图\n", len(pngData), len(compressed))
 		default:
-			fmt.Fprintf(stdout, "压缩：%d -> %d 字节（-%.1f%%）\n",
+			_, _ = fmt.Fprintf(stdout, "压缩：%d -> %d 字节（-%.1f%%）\n",
 				len(pngData), len(compressed), (1-float64(len(compressed))/float64(len(pngData)))*100)
 			pngData = compressed
 		}
@@ -180,7 +180,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	if err := fsutil.WriteFileAtomic(imagePath, pngData, 0o644); err != nil {
 		return Result{}, fmt.Errorf("写入 PNG: %w", err)
 	}
-	fmt.Fprintf(stdout, "已生成 %s（%d×%d，报告 %s，%d KB）\n",
+	_, _ = fmt.Fprintf(stdout, "已生成 %s（%d×%d，报告 %s，%d KB）\n",
 		imagePath, shotResult.Width, shotResult.Height, shotResult.Slug, len(pngData)/1024)
 
 	result := Result{
@@ -195,7 +195,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	}
 	cfg, err := shot.LoadOSSConfig(opts.Root)
 	if err != nil {
-		fmt.Fprintf(stdout, "未配置 OSS，跳过上传（本地图片已生成）：%v\n", err)
+		_, _ = fmt.Fprintf(stdout, "未配置 OSS，跳过上传（本地图片已生成）：%v\n", err)
 		return result, nil
 	}
 	objectPath := opts.OSSPath
@@ -210,7 +210,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		return Result{}, err
 	}
 	result.PublicURL = publicURL
-	fmt.Fprintf(stdout, "已上传（覆盖）%s\n", publicURL)
+	_, _ = fmt.Fprintf(stdout, "已上传（覆盖）%s\n", publicURL)
 	return result, nil
 }
 
@@ -228,10 +228,10 @@ func loadExport(path string) (*rank.Export, error) {
 
 func printRanking(w io.Writer, result rank.Result) {
 	for _, warning := range result.Warnings {
-		fmt.Fprintln(w, "警告:", warning)
+		_, _ = fmt.Fprintln(w, "警告:", warning)
 	}
 	if result.Mode == "turns" {
-		fmt.Fprintln(w, "话题排序（话轮模型：0.45×有效参与人数 + 0.40×文字话轮 + 0.15×密集度）：")
+		_, _ = fmt.Fprintln(w, "话题排序（话轮模型：0.45×有效参与人数 + 0.40×文字话轮 + 0.15×密集度）：")
 		for i, topic := range result.Topics {
 			status := "保留"
 			if !topic.Kept {
@@ -243,20 +243,20 @@ func printRanking(w io.Writer, result rank.Result) {
 				textRatio = float64(topic.TextTurns) / float64(topic.Turns)
 				denseRatio = float64(topic.DenseTurns) / float64(topic.Turns)
 			}
-			fmt.Fprintf(w, "%2d. %.4f  话轮 %3d  有效 %5.2f  人数 %3d  消息 %4d  文字 %.2f  密集 %.2f  [%s] %s\n",
+			_, _ = fmt.Fprintf(w, "%2d. %.4f  话轮 %3d  有效 %5.2f  人数 %3d  消息 %4d  文字 %.2f  密集 %.2f  [%s] %s\n",
 				i+1, topic.Score, topic.Turns, topic.Effective, len(topic.Participants), topic.Messages,
 				textRatio, denseRatio, status, topic.Title)
 		}
 	} else {
-		fmt.Fprintln(w, "话题排序（有效参与人数 × log2(2 + 消息数)）：")
+		_, _ = fmt.Fprintln(w, "话题排序（有效参与人数 × log2(2 + 消息数)）：")
 		for i, topic := range result.Topics {
 			status := "保留"
 			if !topic.Kept {
 				status = "截断"
 			}
-			fmt.Fprintf(w, "%2d. %6.2f  消息 %4d  人数 %3d  有效 %5.2f  [%s] %s\n",
+			_, _ = fmt.Fprintf(w, "%2d. %6.2f  消息 %4d  人数 %3d  有效 %5.2f  [%s] %s\n",
 				i+1, topic.Score, topic.Messages, len(topic.Participants), topic.Effective, status, topic.Title)
 		}
 	}
-	fmt.Fprintf(w, "共 %d 个话题，保留 %d 个。\n", result.Total, result.Kept)
+	_, _ = fmt.Fprintf(w, "共 %d 个话题，保留 %d 个。\n", result.Total, result.Kept)
 }

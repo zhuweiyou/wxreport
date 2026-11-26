@@ -41,7 +41,7 @@ func main() {
 func runMain(args []string, stdout, stderr io.Writer) int {
 	root, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintln(stderr, "错误:", err)
+		_, _ = fmt.Fprintln(stderr, "错误:", err)
 		return 1
 	}
 	_ = godotenv.Load()
@@ -49,7 +49,7 @@ func runMain(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("wxreport", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
-		fmt.Fprintln(stdout, usageText)
+		_, _ = fmt.Fprintln(stdout, usageText)
 	}
 	once := flags.Bool("once", false, "立即执行一次后退出")
 	if err := flags.Parse(args); err != nil {
@@ -59,20 +59,20 @@ func runMain(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if flags.NArg() > 0 {
-		fmt.Fprintf(stderr, "未知参数：%s\n", strings.Join(flags.Args(), " "))
+		_, _ = fmt.Fprintf(stderr, "未知参数：%s\n", strings.Join(flags.Args(), " "))
 		return 2
 	}
 
 	ctx := context.Background()
 	if *once {
 		if err := runOnce(ctx, root, stdout); err != nil {
-			fmt.Fprintln(stderr, "错误:", err)
+			_, _ = fmt.Fprintln(stderr, "错误:", err)
 			return 1
 		}
 		return 0
 	}
 	if err := runDaemon(ctx, root, stdout, stderr); err != nil {
-		fmt.Fprintln(stderr, "错误:", err)
+		_, _ = fmt.Fprintln(stderr, "错误:", err)
 		return 1
 	}
 	return 0
@@ -101,7 +101,7 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 	if result.Skipped {
 		return nil
 	}
-	fmt.Fprintf(stdout, "完成：%s\n", result.ReportPath)
+	_, _ = fmt.Fprintf(stdout, "完成：%s\n", result.ReportPath)
 	return nil
 }
 
@@ -126,7 +126,7 @@ func runDaemon(ctx context.Context, root string, stdout, stderr io.Writer) error
 		runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 		if err := runOnce(runCtx, root, stdout); err != nil {
-			fmt.Fprintf(stderr, "执行失败：%v\n", err)
+			_, _ = fmt.Fprintf(stderr, "执行失败：%v\n", err)
 		}
 	}); err != nil {
 		return fmt.Errorf("cron 表达式: %w", err)
@@ -136,11 +136,11 @@ func runDaemon(ctx context.Context, root string, stdout, stderr io.Writer) error
 	defer stop()
 
 	scheduler.Start()
-	fmt.Fprintf(stdout, "daemon 已启动：时区 %s，计划 %s\n", timezone, schedule)
+	_, _ = fmt.Fprintf(stdout, "daemon 已启动：时区 %s，计划 %s\n", timezone, schedule)
 
 	<-ctx.Done()
 	scheduler.Stop()
-	fmt.Fprintln(stdout, "daemon 已停止。")
+	_, _ = fmt.Fprintln(stdout, "daemon 已停止。")
 	return nil
 }
 

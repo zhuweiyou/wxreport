@@ -669,7 +669,7 @@ func stripUnusedFootnotes(footer, body string) string {
 			j := i + 1
 			for j < len(lines) {
 				next := lines[j]
-				if strings.TrimSpace(next) == "" || !(strings.HasPrefix(next, " ") || strings.HasPrefix(next, "\t")) {
+				if strings.TrimSpace(next) == "" || (!strings.HasPrefix(next, " ") && !strings.HasPrefix(next, "\t")) {
 					break
 				}
 				j++

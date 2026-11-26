@@ -15,6 +15,7 @@ internal/shot/                长图：Markdown 渲染、headless 截图、可�
 internal/compress/             本地 256 色 PNG 压缩
 internal/fsutil/               原子写入
 .env.example                   配置模板
+.github/workflows/ci.yml       push / PR 的 lint + test
 .github/workflows/release.yml  手动触发的发布 workflow
 .goreleaser.yml                跨平台构建配置
 Makefile                       构建 / 测试 / 清理
@@ -149,8 +150,9 @@ daemon：
 ```bash
 make build                     # 输出到项目根目录
 make test                      # go test ./...
+make lint                      # golangci-lint run
+make check                     # lint + test
 go test ./internal/pipeline    # 只测编排
-go vet ./...
 ```
 
 测试覆盖：
@@ -171,7 +173,7 @@ go vet ./...
 `.github/workflows/release.yml` 通过 `workflow_dispatch` 手动触发，只需填版本号（如 `v0.4.0`）：
 
 1. `actions/setup-go` 按 `go.mod` 安装 Go
-2. `go vet ./...` + `go test ./...`
+2. `golangci-lint run ./...` + `go test ./...`
 3. 创建并推送 tag
 4. GoReleaser 构建 darwin/windows × amd64/arm64 二进制，并附带 `env.example`
 5. Release notes 自动从提交记录生成，不排除任何提交

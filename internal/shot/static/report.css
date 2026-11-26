@@ -1,0 +1,85 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f6f8fa;
+}
+
+main.markdown-body {
+  box-sizing: border-box;
+  min-width: 200px;
+  max-width: 980px;
+  margin: 24px auto;
+  padding: 45px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Shot Lepcha", "Shot Tai Tham",
+    "Microsoft Himalaya", "Kailasa", "Apple Color Emoji", "Segoe UI Emoji",
+    "Noto Color Emoji", sans-serif;
+}
+
+@media (max-width: 767px) {
+  main.markdown-body {
+    margin: 0;
+    padding: 15px;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
+main.markdown-body .report-title {
+  margin: 0 0 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #d8dee4;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 700;
+  text-align: center;
+  color: #1f2328;
+}
+
+main.markdown-body h2 {
+  font-size: 18px;
+}
+
+main.markdown-body sup a {
+  text-decoration: none;
+}
+
+main.markdown-body sup a::before {
+  content: "[";
+}
+
+main.markdown-body sup a::after {
+  content: "]";
+}
+
+main.markdown-body .footnotes {
+  font-size: 1em;
+  color: #1f2328;
+  margin-top: 8px;
+  border-top: 0;
+}
+
+main.markdown-body .footnotes > hr {
+  display: none;
+}
+
+main.markdown-body .footnotes ol {
+  padding-left: 1.5em;
+}
+
+main.markdown-body .footnotes li {
+  margin: 8px 0;
+}
+
+main.markdown-body .footnote-backref {
+  display: none;
+}
+
+main.markdown-body .footnotes li > p > a[href^="http"] {
+  color: #0969da;
+  word-break: break-all;
+}

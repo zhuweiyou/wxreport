@@ -56,7 +56,7 @@ func TestRenderHTMLUsesFixedTitle(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(htmlBytes)
-	for _, want := range []string{fixedTitle, "话题", "正文"} {
+	for _, want := range []string{fixedTitle, "话题", "正文", "report-title", "main.markdown-body {"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q", want)
 		}
