@@ -1,8 +1,7 @@
-// Package shot 把最新一篇 Markdown 报告渲染成移动端长图。
+// Package shot 把自包含 HTML 截图成移动端长图。
 //
-// 不启动本地 server、不依赖登录态：报告先在进程内渲染成自包含 HTML（样式内嵌），
-// 再交给 headless Chrome 以固定 375 CSS px 视口截图，按 2x/3x 输出 PNG。
-// 报告很长时自动分片截图再拼接，绕开 Chrome 单张截图的纹理高度上限。
+// 不启动本地 server、不依赖登录态：交给 headless Chrome 以固定 375 CSS px 视口截图，
+// 按 2x/3x 输出 PNG。报告很长时自动分片截图再拼接，绕开 Chrome 单张截图的纹理高度上限。
 package shot
 
 import (
@@ -16,9 +15,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/chromedp/cdproto/page"
@@ -37,9 +34,8 @@ const (
 
 // Options 控制截图行为。
 type Options struct {
-	ReportsDir string
-	// Report 可以是 slug（20261124130000）、文件名，或 "latest"/空 表示最新一篇。
-	Report     string
+	HTML       []byte
+	Slug       string
 	Width      int
 	Scale      int
 	ChromePath string
@@ -48,13 +44,12 @@ type Options struct {
 // Result 是截图结果。
 type Result struct {
 	Slug   string
-	Title  string
 	PNG    []byte
 	Width  int
 	Height int
 }
 
-// Capture 渲染指定报告并返回整页 PNG。
+// Capture 把自包含 HTML 截成整页 PNG。
 func Capture(ctx context.Context, opts Options) (Result, error) {
 	width := opts.Width
 	if width <= 0 {
@@ -67,14 +62,12 @@ func Capture(ctx context.Context, opts Options) (Result, error) {
 	if scale > 3 {
 		return Result{}, fmt.Errorf("scale 最大为 3，当前 %d", scale)
 	}
-
-	rep, err := resolveReport(opts.ReportsDir, opts.Report)
-	if err != nil {
-		return Result{}, err
+	if len(opts.HTML) == 0 {
+		return Result{}, fmt.Errorf("HTML 不能为空")
 	}
-	htmlBytes, err := renderHTML(rep)
-	if err != nil {
-		return Result{}, err
+	slug := opts.Slug
+	if slug == "" {
+		slug = "report"
 	}
 
 	chromePath, err := FindChrome(opts.ChromePath)
@@ -99,13 +92,13 @@ func Capture(ctx context.Context, opts Options) (Result, error) {
 	defer cancelBrowser()
 
 	// 用 data URL 加载，避免临时文件路径在 Windows/macOS 上的差异。
-	dataURL := "data:text/html;charset=utf-8;base64," + base64.StdEncoding.EncodeToString(htmlBytes)
+	dataURL := "data:text/html;charset=utf-8;base64," + base64.StdEncoding.EncodeToString(opts.HTML)
 	if err := chromedp.Do(browserCtx,
 		chromedp.EmulateViewport(int64(width), 900),
 		chromedp.Navigate(dataURL),
 		chromedp.WaitVisible(chromedp.CSS(`main.markdown-body`)),
 	); err != nil {
-		return Result{}, fmt.Errorf("打开报告页 %s: %w", rep.Slug, err)
+		return Result{}, fmt.Errorf("打开报告页 %s: %w", slug, err)
 	}
 
 	// 样式已内嵌，这里只等字体就绪，避免标题/正文用回退字体。
@@ -165,8 +158,7 @@ func Capture(ctx context.Context, opts Options) (Result, error) {
 	}
 
 	return Result{
-		Slug:   rep.Slug,
-		Title:  rep.Title,
+		Slug:   slug,
 		PNG:    buf.Bytes(),
 		Width:  width * scale,
 		Height: totalHeight * scale,
@@ -191,24 +183,6 @@ func captureSlice(ctx context.Context, width, y, height, scale int) ([]byte, err
 }
 
 func boolPtr(v bool) *bool { return &v }
-
-// resolveReport 把 "latest"、slug 或文件名解析成一篇报告。
-func resolveReport(dir, id string) (report, error) {
-	if id == "" || id == "latest" {
-		return latestReport(dir)
-	}
-
-	name := filepath.Base(strings.TrimSuffix(id, ".md"))
-	path := filepath.Join(dir, name+".md")
-	if _, err := os.Stat(path); err != nil {
-		return report{}, fmt.Errorf("未找到报告 %q（期望文件 %s）", id, path)
-	}
-	title, err := reportTitle(path)
-	if err != nil {
-		return report{}, err
-	}
-	return report{Slug: name, Title: title, Path: path}, nil
-}
 
 // FindChrome 返回 Chrome/Chromium/Edge 的可执行文件路径。
 // 优先使用显式路径或 CHROME_PATH，其次按平台常见安装位置查找。
@@ -247,5 +221,5 @@ func FindChrome(explicit string) (string, error) {
 			return path, nil
 		}
 	}
-	return "", fmt.Errorf("找不到 Chrome/Chromium/Edge，请用 --chrome 或环境变量 CHROME_PATH 指定")
+	return "", fmt.Errorf("找不到 Chrome/Chromium/Edge，请用环境变量 CHROME_PATH 指定")
 }

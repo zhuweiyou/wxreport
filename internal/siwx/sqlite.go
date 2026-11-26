@@ -1,18 +1,24 @@
 package siwx
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 )
 
 // querySQLite 执行只读查询；数据库被占用时复制一份再查。
 func querySQLite(dbPath, separator, query string) (string, error) {
+	sqlite3, err := exec.LookPath("sqlite3")
+	if err != nil {
+		return "", fmt.Errorf("找不到 sqlite3，请安装后重试: %w", err)
+	}
+
 	args := []string{"-readonly"}
 	if separator != "" {
 		args = append(args, "-separator", separator)
 	}
 	args = append(args, dbPath, query)
-	output, err := exec.Command("/usr/bin/sqlite3", args...).Output()
+	output, err := exec.Command(sqlite3, args...).Output()
 	if err == nil {
 		return string(output), nil
 	}
@@ -39,7 +45,7 @@ func querySQLite(dbPath, separator, query string) (string, error) {
 		args = append(args, "-separator", separator)
 	}
 	args = append(args, temp.Name(), query)
-	output, err = exec.Command("/usr/bin/sqlite3", args...).Output()
+	output, err = exec.Command(sqlite3, args...).Output()
 	if err != nil {
 		return "", err
 	}

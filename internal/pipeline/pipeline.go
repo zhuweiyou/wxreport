@@ -33,6 +33,7 @@ type Options struct {
 	NoUpload       bool
 	NoParticipants bool
 	Compress       bool
+	Title          string
 }
 
 // Result 是一次运行的产物摘要。
@@ -148,17 +149,23 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	if err != nil {
 		return Result{}, fmt.Errorf("report: %w", err)
 	}
-	reportPath := filepath.Join(reportsDir, time.Unix(end, 0).Format("20060102150405")+".md")
+	slug := time.Unix(end, 0).Format("20060102150405")
+	reportPath := filepath.Join(reportsDir, slug+".md")
 	if err := fsutil.WriteStringAtomic(reportPath, markdown, 0o644); err != nil {
 		return Result{}, fmt.Errorf("写报告: %w", err)
 	}
 	printRanking(stdout, rankResult)
 
 	_, _ = fmt.Fprintln(stdout, "== 生成长图 ==")
+	htmlBytes, err := report.HTML(report.Report{Slug: slug, Path: reportPath}, opts.Title)
+	if err != nil {
+		return Result{}, fmt.Errorf("report html: %w", err)
+	}
 	shotResult, err := steps.Shot(ctx, shot.Options{
-		ReportsDir: reportsDir,
-		Width:      shot.DefaultWidth,
-		Scale:      shot.DefaultScale,
+		HTML:  htmlBytes,
+		Slug:  slug,
+		Width: shot.DefaultWidth,
+		Scale: shot.DefaultScale,
 	})
 	if err != nil {
 		return Result{}, fmt.Errorf("shot: %w", err)

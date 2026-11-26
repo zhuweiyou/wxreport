@@ -94,6 +94,7 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 		NoUpload:       !envBool("WXREPORT_UPLOAD", false),
 		NoParticipants: !envBool("WXREPORT_PARTICIPANTS", true),
 		Compress:       envBool("WXREPORT_COMPRESS", true),
+		Title:          os.Getenv("WXREPORT_TITLE"),
 	}, liveSteps{summarizer: summarize.New(cfg)}, stdout)
 	if err != nil {
 		return err

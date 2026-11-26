@@ -3,7 +3,6 @@ package siwx
 import (
 	"encoding/hex"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -73,7 +72,8 @@ func TestParseGroupMembers(t *testing.T) {
 }
 
 func TestLoadGroupNickNamesFromSQLite(t *testing.T) {
-	if _, err := os.Stat("/usr/bin/sqlite3"); err != nil {
+	sqlite3, err := exec.LookPath("sqlite3")
+	if err != nil {
 		t.Skip("sqlite3 不可用")
 	}
 	dbPath := filepath.Join(t.TempDir(), "contact.db")
@@ -86,7 +86,7 @@ func TestLoadGroupNickNamesFromSQLite(t *testing.T) {
 			"INSERT INTO chat_room VALUES('12345678901@chatroom', X'%s');",
 		hex.EncodeToString(blob),
 	)
-	if output, err := exec.Command("/usr/bin/sqlite3", dbPath, sql).CombinedOutput(); err != nil {
+	if output, err := exec.Command(sqlite3, dbPath, sql).CombinedOutput(); err != nil {
 		t.Fatalf("创建测试库: %v\n%s", err, output)
 	}
 

@@ -34,9 +34,9 @@ func Names(account, chat string) error {
 	if err := getJSON(client, baseURL+"/api/settings/overview", &overview); err != nil {
 		return fmt.Errorf("读取解密输出目录失败: %w", err)
 	}
-	outputRoot := overview.OutputRoot
-	if outputRoot == "" {
-		outputRoot = "/Applications/stories-in-wx.app/Contents/MacOS/output"
+	outputRoot, err := resolveOutputRoot(overview.OutputRoot)
+	if err != nil {
+		return err
 	}
 
 	contactDB := filepath.Join(outputRoot, account, "contact", "contact.db")

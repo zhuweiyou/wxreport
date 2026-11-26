@@ -9,10 +9,10 @@ cmd/wxreport/                  CLI：常驻定时 / --once 单次
 internal/pipeline/             固定顺序编排整条流程（Steps 接口可注入 fake）
 internal/siwx/                 SIWX HTTP API：DB 刷新、消息导出、昵称解析
 internal/state/                增量状态：计划、差异合并
-internal/report/               报告渲染：Markdown、资源脚注
+internal/report/               报告渲染：Markdown、HTML、报告选择
 internal/summarize/            OpenAI 兼容接口调用与总结提示词
 internal/rank/                 话轮模型：话轮、有效参与人数、文字/密集度
-internal/shot/                长图：Markdown 渲染、headless 截图
+internal/shot/                长图：headless 截图
 internal/oss/                  阿里云 OSS 上传
 internal/compress/             本地 256 色 PNG 压缩
 internal/fsutil/               原子写入
@@ -114,11 +114,15 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 - `WXREPORT_PARTICIPANTS=false` 时删除每个话题的 `参与者：` 行
 - 资源按 URL 去重并跨话题累加
 
+报告 HTML 由 `internal/report`：
+
+- goldmark 把 Markdown 渲染成自包含 HTML
+- 样式与模板在 `internal/report/static`
+- 标题优先 `WXREPORT_TITLE`，未配置时使用报告 Markdown 的 `#` 标题
+
 长图由 `internal/shot`：
 
-- goldmark 把最新一篇 Markdown 渲染成自包含 HTML
-- headless Chrome 截图，样式在 `internal/shot/render.go`
-- 顶部使用 `render.go` 里的固定标题，不跟随 Markdown 的 `#` 标题
+- headless Chrome 截图
 - 默认输出 `data/latest-report.png`
 
 OSS 上传由 `internal/oss`：
@@ -138,6 +142,7 @@ OSS 上传由 `internal/oss`：
 - 刷新：`POST /api/run`（`{"mode":"auto","db_dir":"..."}`），轮询 `/api/job` 到完成
 - 消息接口单页最多 300 条；导出用 `before` 自动向前翻页拿到完整窗口
 - SIWX 不会自动解密最新写入的消息库，所以每次执行先刷新
+- SIWX 未返回解密输出目录时，使用 `SIWX_OUTPUT_ROOT`
 - 刷新失败按 fail-fast 停止本次执行，下一轮再试
 
 ## 失败处理
@@ -167,10 +172,11 @@ go test ./internal/pipeline    # 只测编排
 | `internal/pipeline` | 端到端 fake、0 消息跳过、总结失败、压缩/回退 |
 | `internal/siwx` | 分页、群昵称解析 |
 | `internal/state` | 计划、合并、淘汰 |
-| `internal/report` | 渲染、资源去重、参与者开关 |
+| `internal/report` | Markdown 渲染、资源去重、参与者开关、报告选择、HTML/标题 |
 | `internal/summarize` | 解析重试 |
 | `internal/rank` | 话轮、密集度、回退分数 |
-| `internal/shot` | 报告选择、HTML 渲染、公网地址 |
+| `internal/shot` | 无自动测试（依赖 Chrome） |
+| `internal/oss` | OSS 配置、公网地址 |
 | `internal/compress` | 尺寸保持、非法输入 |
 | `internal/fsutil` | 原子写入、目录创建 |
 

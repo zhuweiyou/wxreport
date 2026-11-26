@@ -61,7 +61,9 @@ data/latest-report.png             最近一次长图
 | `WXREPORT_UPLOAD` | 是否上传 OSS，默认 `false` |
 | `WXREPORT_PARTICIPANTS` | 是否输出每话题参与者名单，默认 `true` |
 | `WXREPORT_COMPRESS` | 是否压缩长图，默认 `true`；失败或压不小则保留原图 |
+| `WXREPORT_TITLE` | 长图顶部标题；默认使用报告标题（即「群名」24 小时话题 TOP10） |
 | `SIWX_BASE_URL` | SIWX API 地址，默认 `http://127.0.0.1:8787` |
+| `SIWX_OUTPUT_ROOT` | SIWX 未返回解密输出目录时的兜底路径 |
 | `CHROME_PATH` | Chrome/Chromium 路径，不设则自动查找 |
 | `OSS_*` | 可选的 OSS 上传配置，见 `.env.example` |
 
