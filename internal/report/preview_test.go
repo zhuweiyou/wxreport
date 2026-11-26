@@ -111,7 +111,7 @@ func TestPreviewHTML(t *testing.T) {
 				{"72521（西西红柿版", 16}, {"zhu哥哥", 9}, {"Muddy", 5}, {"7", 4},
 				{"拉屎时人类也短暂拥有过尾巴", 4}, {"海", 3}, {"梳子🎏", 2}, {"lemon亮", 1},
 			},
-			Resources:    resources[1:2],
+			Resources: resources[1:2],
 		},
 		{
 			Rank:       4,
@@ -131,7 +131,7 @@ func TestPreviewHTML(t *testing.T) {
 				{"Facksxx", 8}, {"zhu哥哥", 7}, {"飞白", 5}, {"Burgess", 4},
 				{"Lie", 4}, {"拉屎时人类也短暂拥有过尾巴", 3}, {"Not Be丶HHH", 2},
 			},
-			Resources:    resources[2:3],
+			Resources: resources[2:3],
 		},
 		{
 			Rank:       5,
@@ -152,13 +152,13 @@ func TestPreviewHTML(t *testing.T) {
 
 	data := map[string]any{
 		"Title":            "「他们连一箱螃蟹都没送3群」24 小时话题 TOP10",
+		"PageTitle":        "「他们连一箱螃蟹都没送3群」24 小时话题 TOP10",
 		"ChatName":         "他们连一箱螃蟹都没送3群",
 		"WindowStart":      "11-25 20:00",
 		"WindowEnd":        "11-26 20:00",
 		"MessageTotal":     2531,
 		"ParticipantTotal": 62,
-		"TopicCount":       len(topics),
-		"GeneratedAt":      "11-26 20:00",
+		"TopicTotal":       len(topics),
 		"Topics":           topics,
 		"Resources":        resources,
 		"CSS":              template.CSS(css),

@@ -1,6 +1,6 @@
 # wxreport
 
-读取微信群最近 24 小时的消息，调用 OpenAI 兼容接口归纳成 **TOP10 话题**，生成 Markdown 报告和手机长图。
+读取微信群最近 24 小时的消息，调用 OpenAI 兼容接口归纳成 **TOP10 话题**，生成 JSON 报告存档和手机长图。
 
 ## 运行时依赖
 
@@ -10,7 +10,7 @@
     - macOS：`stories-in-wx-v*-macos.dmg`
   - 启动后按 Web 控制台引导完成：选择账号 → 提取密钥并解密；运行期间保持微信登录。
   - 本项目通过本机 HTTP API 访问 SIWX，默认 `http://127.0.0.1:8787`（可用 `SIWX_BASE_URL` 修改）。消息内容会发送到你在 `.env` 中配置的模型接口用于总结。
-- **Chrome/Chromium**：生成长图用，未安装时长图步骤会报错（Markdown 报告仍会生成）。可用 `CHROME_PATH` 指定路径。
+- **Chrome/Chromium**：生成长图用，未安装时长图步骤会报错（JSON 报告仍会生成）。可用 `CHROME_PATH` 指定路径。
 - **SQLite**：已内置纯 Go 驱动，无需安装 `sqlite3` 命令。
 
 ## 快速开始
@@ -39,7 +39,7 @@ OPENAI_MODEL=gpt-6
 5. 结果：
 
 ```
-data/reports/<YYYYMMDDHHMMSS>.md   每轮 Markdown 报告
+data/reports/<YYYYMMDDHHMMSS>.json 每轮报告存档（结构化 JSON）
 data/latest-report.png             最近一次长图
 ```
 

@@ -10,7 +10,6 @@ require (
 	github.com/openai/openai-go v1.12.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/soniakeys/quant v1.0.0
-	github.com/yuin/goldmark v1.8.7
 	modernc.org/sqlite v1.63.0
 )
 

@@ -9,7 +9,7 @@ cmd/wxreport/                  CLI：常驻定时 / --once 单次
 internal/pipeline/             固定顺序编排整条流程（Steps 接口可注入 fake）
 internal/siwx/                 SIWX HTTP API：DB 刷新、消息导出、昵称解析、SQLite 读取
 internal/state/                增量状态：计划、差异合并
-internal/report/               报告渲染：Markdown、HTML、报告选择
+internal/report/               报告构建：结构化 JSON、HTML 渲染
 internal/summarize/            OpenAI 兼容接口调用与总结提示词
 internal/rank/                 话轮模型：话轮、有效参与人数、文字/密集度
 internal/shot/                长图：headless 截图
@@ -46,7 +46,7 @@ logs/                          daemon 日志目录（已 gitignore，可选）
 5. 调用 OpenAI 兼容接口总结，输出 `data/wxstate-update.json`
    - 解析失败时把错误反馈给模型重试，最多 3 次
 6. 合并差异，写回 `data/topics.json`
-7. 渲染 `data/reports/<YYYYMMDDHHMMSS>.md`
+7. 生成 `data/reports/<YYYYMMDDHHMMSS>.json` 存档
 8. 生成长图，按 `WXREPORT_COMPRESS` 做 256 色压缩，按配置上传 OSS
 
 `pipeline.Steps` 抽象了 Refresh / Export / Summarize / Shot 四个外部副作用，测试用 fake 实现。
@@ -107,20 +107,19 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 
 ## 报告与长图
 
-报告由 `internal/report.Render` 从增量状态生成：
+报告由 `internal/report.Build` 从增量状态生成结构化 `Report`，写入 `data/reports/<YYYYMMDDHHMMSS>.json` 存档：
 
-- 状态里的摘要用 `[[res:n]]` 引用话题 `resources` 的第 n 个资源
-- 渲染时统一编号为 `[^n]`，生成「资源列表」
-- 最终报告不含 `[[res:n]]`、`<!-- msgs -->` 等内部标记
+- 话题经 `rank.Score` 按话轮模型排序，取 TOP10
+- 摘要里的 `[[res:n]]` 在构建时解析成 `resource` 片段，资源跨话题按 URL 去重编号
+- 反引号人名解析成 `person` 片段，HTML 直接按片段渲染，不再生成 Markdown
 - 统计窗口时间格式为 `MM-DD HH:MM`，不带年份
-- `WXREPORT_PARTICIPANTS=false` 时删除每个话题的 `参与者：` 行
-- 资源按 URL 去重并跨话题累加
+- `WXREPORT_PARTICIPANTS=false` 时不输出参与者
 
-报告 HTML 由 `internal/report`：
+报告 HTML 由 `internal/report.HTML` 直接渲染 `Report`：
 
-- goldmark 把 Markdown 渲染成自包含 HTML
-- 样式与模板在 `internal/report/static`
-- 标题优先 `WXREPORT_TITLE`，未配置时使用报告 Markdown 的 `#` 标题
+- 模板与样式在 `internal/report/static/report-v2.*`
+- 不使用 Markdown 渲染器，也没有 github-markdown css
+- 标题优先 `WXREPORT_TITLE`，未配置时使用 `Report.Title`
 
 长图由 `internal/shot`：
 
@@ -175,7 +174,7 @@ go test ./internal/pipeline    # 只测编排
 | `internal/pipeline` | 端到端 fake、0 消息跳过、总结失败、压缩/回退 |
 | `internal/siwx` | 分页、群昵称解析 |
 | `internal/state` | 计划、合并、淘汰 |
-| `internal/report` | Markdown 渲染、资源去重、参与者开关、报告选择、HTML/标题 |
+| `internal/report` | 报告构建、资源去重与编号、摘要片段、参与者开关、HTML/标题 |
 | `internal/summarize` | 解析重试 |
 | `internal/rank` | 话轮、密集度、回退分数 |
 | `internal/shot` | 无自动测试（依赖 Chrome） |

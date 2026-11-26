@@ -29,7 +29,7 @@ func testExport(messages ...rank.Message) *rank.Export {
 	}
 }
 
-func TestRenderReportFromState(t *testing.T) {
+func TestBuildReportFromState(t *testing.T) {
 	st := &reportstate.State{
 		Version:  reportstate.Version,
 		ChatName: "测试群",
@@ -57,31 +57,55 @@ func TestRenderReportFromState(t *testing.T) {
 		testMessage(3, "m3", 2000, "丙", "c"),
 	)
 
-	markdown, result, err := Render(st, export, Options{ChatName: "测试群", Top: 10})
+	rep, warnings, err := Build(st, export, Options{ChatName: "测试群", Top: 10})
 	if err != nil {
-		t.Fatalf("Render: %v", err)
+		t.Fatalf("Build: %v", err)
 	}
-	for _, want := range []string{
-		"# 「测试群」24 小时话题 TOP10",
-		"- 消息总数：3",
-		"- 参与人数：3",
-		"## 1.",
-		"[^1]: 资源一 — [https://example.com/a](https://example.com/a)",
-		"参与者：",
-	} {
-		if !strings.Contains(markdown, want) {
-			t.Errorf("missing %q:\n%s", want, markdown)
+	if len(warnings) != 0 {
+		t.Errorf("unexpected warnings: %v", warnings)
+	}
+	if rep.Title != "「测试群」24 小时话题 TOP10" {
+		t.Errorf("title = %q", rep.Title)
+	}
+	if rep.MessageTotal != 3 || rep.ParticipantTotal != 3 {
+		t.Errorf("stats = %d/%d", rep.MessageTotal, rep.ParticipantTotal)
+	}
+	if rep.TopicTotal != 2 || len(rep.Topics) != 2 {
+		t.Fatalf("topics = %d/%d", rep.TopicTotal, len(rep.Topics))
+	}
+	// 两个话题都有话轮，话题一有 2 条消息，应排第一。
+	if rep.Topics[0].Title != "话题一" {
+		t.Errorf("first topic = %q", rep.Topics[0].Title)
+	}
+	if len(rep.Resources) != 1 || rep.Resources[0].Index != 1 {
+		t.Fatalf("resources = %+v", rep.Resources)
+	}
+
+	first := rep.Topics[0]
+	if len(first.Segments) == 0 {
+		t.Fatal("missing summary segments")
+	}
+	var persons, resourceRefs int
+	for _, segment := range first.Segments {
+		switch segment.Kind {
+		case "person":
+			persons++
+		case "resource":
+			resourceRefs++
+			if segment.Index != 1 || segment.URL != "https://example.com/a" {
+				t.Errorf("resource segment = %+v", segment)
+			}
 		}
 	}
-	if strings.Contains(markdown, "[[res:") || strings.Contains(markdown, "<!-- msgs") {
-		t.Errorf("internal markers left in report:\n%s", markdown)
+	if persons != 2 || resourceRefs != 1 {
+		t.Errorf("segments: persons=%d resourceRefs=%d", persons, resourceRefs)
 	}
-	if result.Kept != 2 || len(result.Topics) != 2 {
-		t.Errorf("rank result = %+v", result)
+	if len(first.Participants) != 2 {
+		t.Errorf("participants = %+v", first.Participants)
 	}
 }
 
-func TestRenderNoParticipants(t *testing.T) {
+func TestBuildNoParticipants(t *testing.T) {
 	st := &reportstate.State{
 		Version:  reportstate.Version,
 		Chat:     "test@chatroom",
@@ -95,20 +119,20 @@ func TestRenderNoParticipants(t *testing.T) {
 	}
 	export := testExport(testMessage(1, "m1", 1000, "甲", "a"))
 
-	markdown, _, err := Render(st, export, Options{
+	rep, _, err := Build(st, export, Options{
 		ChatName:       "测试群",
 		Top:            10,
 		NoParticipants: true,
 	})
 	if err != nil {
-		t.Fatalf("Render: %v", err)
+		t.Fatalf("Build: %v", err)
 	}
-	if strings.Contains(markdown, "参与者：") {
-		t.Fatalf("participants should be omitted:\n%s", markdown)
+	if len(rep.Topics) != 1 || len(rep.Topics[0].Participants) != 0 {
+		t.Fatalf("participants should be omitted: %+v", rep.Topics)
 	}
 }
 
-func TestRenderDeduplicatesResourcesAndHasNoLimit(t *testing.T) {
+func TestBuildDeduplicatesResourcesAndHasNoLimit(t *testing.T) {
 	resources := make([]reportstate.Resource, 0, 12)
 	markers := make([]string, 0, 12)
 	for i := 1; i <= 12; i++ {
@@ -144,28 +168,22 @@ func TestRenderDeduplicatesResourcesAndHasNoLimit(t *testing.T) {
 		testMessage(1, "m1", 1000, "甲", "a"),
 		testMessage(2, "m2", 1060, "乙", "b"),
 	)
-	markdown, _, err := Render(st, export, Options{ChatName: "测试群", Top: 10})
+
+	rep, _, err := Build(st, export, Options{ChatName: "测试群", Top: 10})
 	if err != nil {
-		t.Fatalf("Render: %v", err)
+		t.Fatalf("Build: %v", err)
 	}
-	if strings.Contains(markdown, "[[res:") {
-		t.Errorf("resource markers left:\n%s", markdown)
+	if len(rep.Resources) != 12 {
+		t.Fatalf("resources = %d, want 12", len(rep.Resources))
 	}
-	if got := strings.Count(markdown, "[^"); got < 24 {
-		t.Errorf("footnote refs+defs = %d, want >= 24", got)
-	}
-	defs := 0
-	for _, line := range strings.Split(markdown, "\n") {
-		if strings.HasPrefix(line, "[^") && strings.Contains(line, "]:") {
-			defs++
+	for i, resource := range rep.Resources {
+		if resource.Index != i+1 {
+			t.Errorf("resource[%d].Index = %d", i, resource.Index)
 		}
-	}
-	if defs != 12 {
-		t.Errorf("resource definitions = %d, want 12 (dedupe + no 10 cap)\n%s", defs, markdown)
 	}
 }
 
-func TestRenderUsesLocation(t *testing.T) {
+func TestBuildUsesLocation(t *testing.T) {
 	st := &reportstate.State{
 		Version:  reportstate.Version,
 		ChatName: "测试群",
@@ -179,18 +197,18 @@ func TestRenderUsesLocation(t *testing.T) {
 	export := testExport(testMessage(1, "m1", 1000, "甲", "a"))
 	loc := time.FixedZone("UTC+8", 8*3600)
 
-	markdown, _, err := Render(st, export, Options{Location: loc})
+	rep, _, err := Build(st, export, Options{Location: loc})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(markdown, "01-01 08:00 ~ 01-01 10:46") {
-		t.Fatalf("window should use configured location:\n%s", markdown)
+	if rep.WindowStart != "01-01 08:00" || rep.WindowEnd != "01-01 10:46" {
+		t.Fatalf("window = %q ~ %q", rep.WindowStart, rep.WindowEnd)
 	}
 }
 
-func TestRenderRejectsEmptyState(t *testing.T) {
+func TestBuildRejectsEmptyState(t *testing.T) {
 	export := testExport(testMessage(1, "m1", 1000, "甲", "a"))
-	if _, _, err := Render(&reportstate.State{Version: reportstate.Version}, export, Options{}); err == nil {
+	if _, _, err := Build(&reportstate.State{Version: reportstate.Version}, export, Options{}); err == nil {
 		t.Fatal("expected error for empty state")
 	}
 }

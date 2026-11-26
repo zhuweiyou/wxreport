@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"wxreport/internal/rank"
+	reportpkg "wxreport/internal/report"
 	"wxreport/internal/shot"
 	"wxreport/internal/siwx"
 	reportstate "wxreport/internal/state"
@@ -99,17 +100,23 @@ func TestRunEndToEnd(t *testing.T) {
 		t.Fatalf("plan = %+v, want bootstrap", steps.gotPlan)
 	}
 
-	report, err := os.ReadFile(result.ReportPath)
+	rawReport, err := os.ReadFile(result.ReportPath)
 	if err != nil {
 		t.Fatalf("read report: %v", err)
 	}
-	text := string(report)
-	if strings.Contains(text, "参与者：") {
-		t.Fatalf("participants should be omitted:\n%s", text)
+	var rep reportpkg.Report
+	if err := json.Unmarshal(rawReport, &rep); err != nil {
+		t.Fatalf("parse report: %v", err)
 	}
-	windowRe := regexp.MustCompile(`统计窗口：\d{2}-\d{2} \d{2}:\d{2} ~ \d{2}-\d{2} \d{2}:\d{2}`)
-	if !windowRe.MatchString(text) {
-		t.Fatalf("window should omit year:\n%s", text)
+	if len(rep.Topics) == 0 {
+		t.Fatal("report has no topics")
+	}
+	if len(rep.Topics[0].Participants) != 0 {
+		t.Fatalf("participants should be omitted: %+v", rep.Topics[0].Participants)
+	}
+	windowRe := regexp.MustCompile(`^\d{2}-\d{2} \d{2}:\d{2}$`)
+	if !windowRe.MatchString(rep.WindowStart) || !windowRe.MatchString(rep.WindowEnd) {
+		t.Fatalf("window should omit year: %q ~ %q", rep.WindowStart, rep.WindowEnd)
 	}
 
 	for _, path := range []string{
