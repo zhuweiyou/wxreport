@@ -2,83 +2,12 @@ package siwx
 
 import (
 	"fmt"
-	"net/http"
-	"path/filepath"
-	"sort"
 	"strings"
-	"time"
 	"unicode"
 )
 
 type overviewResponse struct {
 	OutputRoot string `json:"output_root"`
-}
-
-type nameRow struct {
-	Preferred string
-	Wxid      string
-}
-
-// Names 输出 sender -> 群昵称/微信昵称 的映射。
-// 优先群昵称，其次 contact.nick_name，绝不使用 remark。
-func Names(account, chat string) error {
-	baseURL := strings.TrimRight(envOr("SIWX_BASE_URL", defaultBaseURL), "/")
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	messages, err := fetchChatSince(client, baseURL, account, chat, time.Now().Add(-24*time.Hour).Unix())
-	if err != nil {
-		return err
-	}
-
-	var overview overviewResponse
-	if err := getJSON(client, baseURL+"/api/settings/overview", &overview); err != nil {
-		return fmt.Errorf("读取解密输出目录失败: %w", err)
-	}
-	outputRoot, err := resolveOutputRoot(overview.OutputRoot)
-	if err != nil {
-		return err
-	}
-
-	contactDB := filepath.Join(outputRoot, account, "contact", "contact.db")
-	nickNames, err := loadNickNames(contactDB)
-	if err != nil {
-		return err
-	}
-	groupNames, err := loadGroupNickNames(contactDB, chat)
-	if err != nil {
-		return err
-	}
-
-	seen := make(map[string]bool)
-	rows := make([]nameRow, 0, len(messages))
-	for _, message := range messages {
-		if message.SenderName == "" && message.SenderWxid == "" {
-			continue
-		}
-		preferred := preferredName(message, groupNames, nickNames)
-		key := preferred + "\x00" + message.SenderWxid
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		rows = append(rows, nameRow{
-			Preferred: preferred,
-			Wxid:      message.SenderWxid,
-		})
-	}
-
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].Preferred == rows[j].Preferred {
-			return rows[i].Wxid < rows[j].Wxid
-		}
-		return rows[i].Preferred < rows[j].Preferred
-	})
-
-	fmt.Println("preferred\twxid")
-	for _, row := range rows {
-		fmt.Printf("%s\t%s\n", row.Preferred, row.Wxid)
-	}
-	return nil
 }
 
 func meaningfulName(name string) bool {

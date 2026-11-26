@@ -2,14 +2,10 @@ package siwx
 
 import (
 	"encoding/json"
-	"fmt"
 	"html"
-	"net/http"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
-	"time"
 )
 
 var urlPattern = regexp.MustCompile(`https?://[^\s<>"']+`)
@@ -18,56 +14,6 @@ type linkCard struct {
 	Title string `json:"title"`
 	Desc  string `json:"desc"`
 	URL   string `json:"url"`
-}
-
-type resourceRow struct {
-	TS    int64
-	Title string
-	URL   string
-}
-
-// Resources 输出最近 24 小时内消息中出现的网址/卡片资源。
-// 输出 TSV：n、ts、title、url；不包含发送者，避免昵称/备注泄露。
-func Resources(account, chat string) error {
-	baseURL := strings.TrimRight(envOr("SIWX_BASE_URL", defaultBaseURL), "/")
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	since := time.Now().Add(-24 * time.Hour).Unix()
-	messages, err := fetchChatSince(client, baseURL, account, chat, since)
-	if err != nil {
-		return err
-	}
-
-	seen := make(map[string]bool)
-	rows := make([]resourceRow, 0)
-	for _, message := range messages {
-		if message.TS < since {
-			continue
-		}
-		card := decodeLink(message.Link)
-		title := resourceTitle(message, card)
-		for _, raw := range messageURLs(message, card) {
-			link := cleanURL(raw)
-			if link == "" || seen[link] {
-				continue
-			}
-			seen[link] = true
-			rows = append(rows, resourceRow{TS: message.TS, Title: title, URL: link})
-		}
-	}
-
-	sort.SliceStable(rows, func(i, j int) bool {
-		if rows[i].TS == rows[j].TS {
-			return rows[i].URL < rows[j].URL
-		}
-		return rows[i].TS < rows[j].TS
-	})
-
-	fmt.Println("n\tts\ttitle\turl")
-	for index, row := range rows {
-		fmt.Printf("%d\t%d\t%s\t%s\n", index+1, row.TS, row.Title, row.URL)
-	}
-	return nil
 }
 
 func decodeLink(raw json.RawMessage) linkCard {

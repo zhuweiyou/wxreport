@@ -5,43 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
-
-func TestLatestPrefersTimestamp(t *testing.T) {
-	dir := t.TempDir()
-	older := filepath.Join(dir, "20261123230000.md")
-	newer := filepath.Join(dir, "20261124000000.md")
-	if err := os.WriteFile(older, []byte("# 旧\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(newer, []byte("# 新\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	// 时间戳更大的文件反而 mtime 更旧，仍应被选中。
-	now := time.Now()
-	if err := os.Chtimes(older, now, now); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chtimes(newer, now.Add(-2*time.Hour), now.Add(-2*time.Hour)); err != nil {
-		t.Fatal(err)
-	}
-
-	rep, err := Latest(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if rep.Slug != "20261124000000" {
-		t.Fatalf("slug = %s, want 20261124000000", rep.Slug)
-	}
-}
-
-func TestLatestMissingDir(t *testing.T) {
-	_, err := Latest(filepath.Join(t.TempDir(), "nope"))
-	if err == nil || !strings.Contains(err.Error(), "不存在") {
-		t.Fatalf("err = %v, want 目录不存在", err)
-	}
-}
 
 func TestHTMLUsesReportTitle(t *testing.T) {
 	dir := t.TempDir()
@@ -51,7 +15,7 @@ func TestHTMLUsesReportTitle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	htmlBytes, err := HTML(Report{Slug: "20261124000000", Path: path}, "")
+	htmlBytes, err := HTML(Report{Path: path}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +35,7 @@ func TestHTMLUsesTitleOverride(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	htmlBytes, err := HTML(Report{Slug: "20261124000000", Path: path}, "自定义标题")
+	htmlBytes, err := HTML(Report{Path: path}, "自定义标题")
 	if err != nil {
 		t.Fatal(err)
 	}

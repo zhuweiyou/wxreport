@@ -163,7 +163,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	printRanking(stdout, rankResult)
 
 	_, _ = fmt.Fprintln(stdout, "== 生成长图 ==")
-	htmlBytes, err := report.HTML(report.Report{Slug: slug, Path: reportPath}, opts.Title)
+	htmlBytes, err := report.HTML(report.Report{Path: reportPath}, opts.Title)
 	if err != nil {
 		return Result{}, fmt.Errorf("report html: %w", err)
 	}

@@ -9,9 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
-	"time"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -48,66 +46,12 @@ var rareFontCSS = func() string {
 var (
 	markdownRenderer = goldmark.New(goldmark.WithExtensions(extension.GFM, extension.Footnote))
 	firstTitleRe     = regexp.MustCompile(`^#\s+(.*)$`)
-	timestampRe      = regexp.MustCompile(`^\d{14}$`)
 	reportTemplate   = template.Must(template.New("report").Parse(reportTemplateSource))
 )
 
 // Report 是一篇待截图的 Markdown 报告。
 type Report struct {
-	Slug string
 	Path string
-}
-
-// Latest 返回报告目录（data/reports）里最新的一篇报告。文件名是 14 位时间戳时按文件名排序，
-// 否则退回文件修改时间。
-func Latest(dir string) (Report, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return Report{}, fmt.Errorf("报告目录 %s 不存在，请先生成报告", dir)
-		}
-		return Report{}, fmt.Errorf("读取报告目录 %s: %w", dir, err)
-	}
-
-	type candidate struct {
-		Report
-		modTime time.Time
-		timed   bool
-	}
-	var candidates []candidate
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-		info, err := entry.Info()
-		if err != nil {
-			return Report{}, fmt.Errorf("读取报告 %s: %w", entry.Name(), err)
-		}
-		stem := strings.TrimSuffix(entry.Name(), ".md")
-		candidates = append(candidates, candidate{
-			Report:  Report{Slug: stem, Path: filepath.Join(dir, entry.Name())},
-			modTime: info.ModTime(),
-			timed:   timestampRe.MatchString(stem),
-		})
-	}
-	if len(candidates) == 0 {
-		return Report{}, fmt.Errorf("报告目录 %s 下没有 Markdown 报告", dir)
-	}
-
-	sort.Slice(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if a.timed && b.timed {
-			return a.Slug > b.Slug
-		}
-		if a.timed != b.timed {
-			return a.timed
-		}
-		if !a.modTime.Equal(b.modTime) {
-			return a.modTime.After(b.modTime)
-		}
-		return a.Slug > b.Slug
-	})
-	return candidates[0].Report, nil
 }
 
 // HTML 生成一份自包含的移动端报告页：Markdown 正文 + 内嵌 GitHub 样式，
