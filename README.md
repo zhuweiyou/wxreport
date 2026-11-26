@@ -97,11 +97,11 @@ data/
 make build   # 生成 wxreport（Windows 为 wxreport.exe）
 ```
 
-运行：
+在项目根运行（Windows 用 `.\wxreport.exe`）：
 
 ```bash
-wxreport          # 常驻，按 WXREPORT_CRON 定时执行
-wxreport --once   # 立即执行一次后退出
+./wxreport          # 常驻，按 WXREPORT_CRON 定时执行
+./wxreport --once   # 立即执行一次后退出
 ```
 
 所有行为都由 `.env` 决定，命令行只区分「常驻」和「单次」。
@@ -261,7 +261,7 @@ SIWX 会缓存已解密的 DB，但不会自动解密最新写入的消息库。
 ## 无人值守
 
 ```bash
-wxreport
+./wxreport
 ```
 
 - cron 和时区来自 `WXREPORT_CRON` / `WXREPORT_TIMEZONE`
@@ -273,10 +273,15 @@ wxreport
 
 ```bash
 mkdir -p logs
-wxreport >> logs/wxreport.log 2>&1
+
+# macOS / Linux
+nohup ./wxreport >> logs/wxreport.log 2>&1 &
+
+# Windows (cmd)
+start /b "" cmd /c ".\wxreport.exe >> logs\wxreport.log 2>&1"
 ```
 
-程序本身不安装系统服务，按平台选择一种方式守护 `wxreport`：
+程序本身不安装系统服务，按平台选择一种方式守护该可执行文件：
 
 - macOS：launchd（`KeepAlive`）
 - Linux：systemd（`Restart=always`）
