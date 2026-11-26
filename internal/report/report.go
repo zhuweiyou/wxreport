@@ -126,7 +126,7 @@ func Build(st *reportstate.State, export *rank.Export, opts Options) (Report, []
 	}
 
 	resourceNumbers := make(map[string]int)
-	var resourceOrder []Resource
+	resourceOrder := make([]Resource, 0)
 	number := func(resource reportstate.Resource) int {
 		if index, ok := resourceNumbers[resource.URL]; ok {
 			return index

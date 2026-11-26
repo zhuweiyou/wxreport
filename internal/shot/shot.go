@@ -97,7 +97,7 @@ func Capture(ctx context.Context, opts Options) (Result, error) {
 	if err := chromedp.Do(browserCtx,
 		chromedp.EmulateViewport(int64(width), 900),
 		chromedp.Navigate(dataURL),
-		chromedp.WaitVisible(chromedp.CSS(`main.markdown-body`)),
+		chromedp.WaitVisible(chromedp.CSS(`main.page`)),
 	); err != nil {
 		return Result{}, fmt.Errorf("打开报告页 %s: %w", slug, err)
 	}
