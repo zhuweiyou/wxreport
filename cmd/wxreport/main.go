@@ -93,6 +93,7 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 		OSSPath:        os.Getenv("OSS_PATH"),
 		NoUpload:       !envBool("WXREPORT_UPLOAD", false),
 		NoParticipants: !envBool("WXREPORT_PARTICIPANTS", true),
+		Compress:       envBool("WXREPORT_COMPRESS", true),
 	}, liveSteps{summarizer: summarize.New(cfg)}, stdout)
 	if err != nil {
 		return err
@@ -185,4 +186,3 @@ func (s liveSteps) Summarize(ctx context.Context, plan *reportstate.Plan) (*repo
 func (s liveSteps) Shot(ctx context.Context, opts shot.Options) (shot.Result, error) {
 	return shot.Capture(ctx, opts)
 }
-

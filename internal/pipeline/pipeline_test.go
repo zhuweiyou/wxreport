@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"image"
+	"image/color"
+	"image/png"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,8 +16,8 @@ import (
 
 	"wxreport/internal/rank"
 	"wxreport/internal/shot"
-	reportstate "wxreport/internal/state"
 	"wxreport/internal/siwx"
+	reportstate "wxreport/internal/state"
 )
 
 type fakeSteps struct {
@@ -165,5 +168,72 @@ func TestRunStopsOnSummarizeError(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "data", "topics.json")); !os.IsNotExist(err) {
 		t.Fatalf("topics.json should not be written, err = %v", err)
+	}
+}
+
+func TestRunCompressFallback(t *testing.T) {
+	root := t.TempDir()
+	steps := &fakeSteps{
+		export: rank.Export{
+			Total: 1, Participants: 1,
+			Messages: []rank.Message{{Index: 1, MID: "m1", TS: 1000, Sender: "甲", Text: "a", Kind: "text"}},
+		},
+		update: &reportstate.Update{NewTopics: []reportstate.NewTopic{{
+			TempID: "n1", Title: "话题", Commentary: "点评", Summary: "`甲` 说。", MessageIDs: []string{"m1"},
+		}}},
+		png: []byte("not a png"),
+	}
+
+	var out bytes.Buffer
+	_, err := Run(context.Background(), Options{
+		Root: root, Account: "wxid", Chat: "c@chatroom",
+		Start: 1000, End: 2000, NoUpload: true, Compress: true,
+	}, steps, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "压缩失败") {
+		t.Fatalf("stdout missing fallback warning:\n%s", out.String())
+	}
+}
+
+func TestRunCompressesImage(t *testing.T) {
+	root := t.TempDir()
+	img := image.NewRGBA(image.Rect(0, 0, 80, 80))
+	for y := 0; y < 80; y++ {
+		for x := 0; x < 80; x++ {
+			img.Set(x, y, color.RGBA{R: uint8(x * 3), G: uint8(y * 3), B: 100, A: 255})
+		}
+	}
+	var raw bytes.Buffer
+	if err := png.Encode(&raw, img); err != nil {
+		t.Fatal(err)
+	}
+
+	steps := &fakeSteps{
+		export: rank.Export{
+			Total: 1, Participants: 1,
+			Messages: []rank.Message{{Index: 1, MID: "m1", TS: 1000, Sender: "甲", Text: "a", Kind: "text"}},
+		},
+		update: &reportstate.Update{NewTopics: []reportstate.NewTopic{{
+			TempID: "n1", Title: "话题", Commentary: "点评", Summary: "`甲` 说。", MessageIDs: []string{"m1"},
+		}}},
+		png: raw.Bytes(),
+	}
+
+	var out bytes.Buffer
+	result, err := Run(context.Background(), Options{
+		Root: root, Account: "wxid", Chat: "c@chatroom",
+		Start: 1000, End: 2000, NoUpload: true, Compress: true,
+	}, steps, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(result.ImagePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := png.Decode(bytes.NewReader(data)); err != nil {
+		t.Fatalf("output is not a valid PNG: %v", err)
 	}
 }

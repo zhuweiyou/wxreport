@@ -11,11 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"wxreport/internal/compress"
 	"wxreport/internal/fsutil"
 	"wxreport/internal/rank"
 	"wxreport/internal/shot"
-	reportstate "wxreport/internal/state"
 	"wxreport/internal/siwx"
+	reportstate "wxreport/internal/state"
 )
 
 // Options 是一次运行的输入。
@@ -29,6 +30,7 @@ type Options struct {
 	OSSPath        string
 	NoUpload       bool
 	NoParticipants bool
+	Compress       bool
 }
 
 // Result 是一次运行的产物摘要。
@@ -159,12 +161,27 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	if err != nil {
 		return Result{}, fmt.Errorf("shot: %w", err)
 	}
+	pngData := shotResult.PNG
+	if opts.Compress {
+		compressed, err := compress.PNG(pngData)
+		switch {
+		case err != nil:
+			fmt.Fprintf(stdout, "压缩失败，使用原图：%v\n", err)
+		case len(compressed) >= len(pngData):
+			fmt.Fprintf(stdout, "压缩无收益（%d -> %d 字节），使用原图\n", len(pngData), len(compressed))
+		default:
+			fmt.Fprintf(stdout, "压缩：%d -> %d 字节（-%.1f%%）\n",
+				len(pngData), len(compressed), (1-float64(len(compressed))/float64(len(pngData)))*100)
+			pngData = compressed
+		}
+	}
+
 	imagePath := filepath.Join(dataDir, "latest-report.png")
-	if err := fsutil.WriteFileAtomic(imagePath, shotResult.PNG, 0o644); err != nil {
+	if err := fsutil.WriteFileAtomic(imagePath, pngData, 0o644); err != nil {
 		return Result{}, fmt.Errorf("写入 PNG: %w", err)
 	}
 	fmt.Fprintf(stdout, "已生成 %s（%d×%d，报告 %s，%d KB）\n",
-		imagePath, shotResult.Width, shotResult.Height, shotResult.Slug, len(shotResult.PNG)/1024)
+		imagePath, shotResult.Width, shotResult.Height, shotResult.Slug, len(pngData)/1024)
 
 	result := Result{
 		ReportPath:   reportPath,
@@ -188,7 +205,7 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	if objectPath == "" {
 		objectPath = "latest-report.png"
 	}
-	publicURL, err := shot.Upload(cfg, objectPath, shotResult.PNG)
+	publicURL, err := shot.Upload(cfg, objectPath, pngData)
 	if err != nil {
 		return Result{}, err
 	}

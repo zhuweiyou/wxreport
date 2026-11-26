@@ -31,6 +31,7 @@ internal/state/                增量状态：计划、差异合并、报告渲�
 internal/summarize/            OpenAI 兼容接口调用与总结提示词
 internal/rank/                 话轮模型：话轮、有效参与人数、文字/密集度
 internal/shot/                 长图：Markdown 渲染、headless 截图、可选 OSS 上传
+internal/compress/             本地 256 色 PNG 压缩
 internal/fsutil/               原子写入
 .env.example                   本机配置模板
 Makefile                       构建 / 测试 / 清理
@@ -58,6 +59,7 @@ cp .env.example .env
 | `WXREPORT_CRON` | daemon 计划，默认 `0 0 0,4,8,12,16,20 * * *` |
 | `WXREPORT_UPLOAD` | 是否上传 OSS，默认 `false` |
 | `WXREPORT_PARTICIPANTS` | 是否输出每话题的参与者名单，默认 `true` |
+| `WXREPORT_COMPRESS` | 是否压缩长图，默认 `true`；失败或压不小则保留原图 |
 | `OSS_BUCKET` | OSS Bucket，需公共读；不配置则无法上传 |
 | `OSS_REGION` / `OSS_ENDPOINT` | OSS 地域与 Endpoint，默认 `oss-cn-shanghai` |
 | `OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET` | OSS 访问密钥 |
@@ -83,7 +85,7 @@ data/
   wxmsgs.json           本次导出的 24 小时消息
   wxstate-plan.json     本次给模型的计划
   wxstate-update.json   模型输出的差异
-  latest-report.png     最近一次长图（覆盖写）
+  latest-report.png     最近一次长图（压缩后；无收益时原图；覆盖写）
   reports/              每次执行的 Markdown 报告
 ```
 
@@ -120,6 +122,7 @@ make build   # 生成 wxreport（Windows 为 wxreport.exe）
 | `internal/summarize` | OpenAI 兼容调用与提示词 | 解析重试 |
 | `internal/rank` | 话轮模型与排序 | 话轮、密集度、回退分数 |
 | `internal/shot` | Markdown 渲染、截图、OSS | 报告选择、HTML 渲染、公网地址 |
+| `internal/compress` | 256 色 PNG 压缩 | 尺寸保持、非法输入 |
 | `internal/fsutil` | 原子写入 | 原子写入与目录创建 |
 
 ```bash
@@ -139,7 +142,7 @@ go test ./internal/pipeline    # 只测编排
    - 解析失败时把错误反馈给模型重试，最多 3 次
 6. 合并差异，写回 `data/topics.json`
 7. 渲染 `data/reports/<YYYYMMDDHHMMSS>.md`
-8. 生成长图；按配置决定是否上传 OSS
+8. 生成长图，按 `WXREPORT_COMPRESS` 做本地 256 色压缩，再按配置决定是否上传 OSS
 
 ## 增量状态
 
@@ -230,6 +233,8 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 最终报告由渲染阶段从增量状态生成：状态里的摘要用 `[[res:n]]` 引用该话题 `resources` 数组的第 n 个资源，渲染时统一编号为 `[^n]` 并生成「资源列表」。**最终报告不含 `[[res:n]]`、`<!-- msgs -->` 等内部标记。**
 
 长图阶段用 goldmark 把最新一篇 Markdown 渲染成自包含 HTML，再由 headless Chrome 截图；样式定义在 `internal/shot/render.go`。长图顶部使用该文件里的固定标题，不跟随 Markdown 的 `#` 标题。
+
+截图后会按 `WXREPORT_COMPRESS` 做本地 256 色量化和 BestCompression 重编码。压缩失败或结果不比原图小，就保留原图。整个压缩过程是纯 Go，无网络、无 native 依赖。
 
 格式规则：
 
