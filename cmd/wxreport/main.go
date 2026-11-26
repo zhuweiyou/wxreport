@@ -120,11 +120,7 @@ func runDaemon(ctx context.Context, root string, stdout, stderr io.Writer) error
 	}
 
 	logger := cron.PrintfLogger(log.New(stderr, "", log.LstdFlags))
-	scheduler := cron.New(
-		cron.WithLocation(loc),
-		cron.WithChain(cron.SkipIfStillRunning(logger)),
-		cron.WithLogger(logger),
-	)
+	scheduler := newScheduler(loc, logger)
 	if _, err := scheduler.AddFunc(schedule, func() {
 		runCtx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
@@ -145,6 +141,16 @@ func runDaemon(ctx context.Context, root string, stdout, stderr io.Writer) error
 	scheduler.Stop()
 	fmt.Fprintln(stdout, "daemon 已停止。")
 	return nil
+}
+
+// newScheduler 使用含秒的 6 段 cron 表达式（秒 分 时 日 月 周）。
+func newScheduler(loc *time.Location, logger cron.Logger) *cron.Cron {
+	return cron.New(
+		cron.WithSeconds(),
+		cron.WithLocation(loc),
+		cron.WithChain(cron.SkipIfStillRunning(logger)),
+		cron.WithLogger(logger),
+	)
 }
 
 func envBool(key string, fallback bool) bool {

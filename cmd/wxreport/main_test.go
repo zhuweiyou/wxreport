@@ -4,7 +4,17 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/robfig/cron/v3"
 )
+
+func TestSchedulerAcceptsSixFields(t *testing.T) {
+	scheduler := newScheduler(time.UTC, cron.DefaultLogger)
+	if _, err := scheduler.AddFunc("0 0 0,4,8,12,16,20 * * *", func() {}); err != nil {
+		t.Fatalf("6 段 cron 解析失败: %v", err)
+	}
+}
 
 func TestEnvBool(t *testing.T) {
 	if envBool("WXREPORT_TEST_UNSET", false) {
