@@ -21,12 +21,12 @@ body {
     "Hiragino Sans GB", "Microsoft YaHei", "Shot Lepcha", "Shot Tai Tham",
     "Microsoft Himalaya", "Kailasa", "Apple Color Emoji", "Segoe UI Emoji",
     "Noto Color Emoji", sans-serif;
-  line-height: 1.65;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
 .page {
-  width: 375px;
+  width: 390px;
   margin: 0 auto;
   padding-bottom: 0;
   background: var(--page);
@@ -159,7 +159,7 @@ body {
 .moment__name {
   margin: 1px 0 0;
   font-size: 15px;
-  line-height: 1.45;
+  line-height: 1.5;
   font-weight: 600;
   letter-spacing: 0.002em;
   color: #111827;
@@ -168,7 +168,7 @@ body {
 .moment__text {
   margin: 6px 0 0;
   font-size: 15px;
-  line-height: 1.78;
+  line-height: 1.5;
   color: #222;
   word-break: break-word;
 }
@@ -193,7 +193,7 @@ body {
   gap: 5px;
   color: #64748b;
   font-size: 12.5px;
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
 .moment__heart {
@@ -253,7 +253,7 @@ body {
   background: var(--comment);
   border-radius: 4px;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
 .moment__likes + .moment__comment {
@@ -341,7 +341,7 @@ body {
 
 .res__url {
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: #7c8798;
   word-break: break-all;
 }
