@@ -26,7 +26,7 @@ body {
 }
 
 .page {
-  width: 440px;
+  width: 375px;
   margin: 0 auto;
   padding-bottom: 0;
   background: var(--page);
@@ -175,7 +175,7 @@ body {
 
 .person {
   color: #111827;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .res-ref {
@@ -207,11 +207,12 @@ body {
 .moment__likes-names {
   flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 .moment__person {
+  display: inline-block;
   color: #475569;
+  white-space: nowrap;
 }
 
 .moment__people-sep {
