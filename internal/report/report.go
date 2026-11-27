@@ -4,9 +4,12 @@ package report
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	"wxreport/internal/rank"
 	reportstate "wxreport/internal/state"
@@ -39,6 +42,14 @@ type Topic struct {
 	Resources    []Resource    `json:"resources,omitempty"`
 	MessageCount int           `json:"message_count"`
 	Score        float64       `json:"score"`
+	// Initial 是话题消息最多者昵称的首字（大写），作为头像的底层占位。
+	Initial string `json:"initial,omitempty"`
+	// AvatarURL 是话题中消息最多者的头像地址（SIWX 本地接口）。
+	AvatarURL string `json:"avatar_url,omitempty"`
+	// AvatarWxid 是头像对应的成员 wxid，仅用于本地拉取，不写入报告 JSON。
+	AvatarWxid string `json:"-"`
+	// AvatarData 是头像的 data URI，仅用于截图 HTML，不写入报告 JSON。
+	AvatarData string `json:"-"`
 }
 
 // Segment 是摘要里的一段内容：普通文本、人名或资源引用。
@@ -68,6 +79,10 @@ type Options struct {
 	Top            int
 	NoParticipants bool
 	Location       *time.Location
+	// AvatarBaseURL 是 SIWX 本地接口地址；为空时不生成头像地址。
+	AvatarBaseURL string
+	// Account 是头像接口需要的账号 wxid。
+	Account string
 }
 
 var summaryTokenRe = regexp.MustCompile("`([^`]+)`|\\[\\[res:(\\d+)\\]\\]")
@@ -170,6 +185,23 @@ func Build(st *reportstate.State, export *rank.Export, opts Options) (Report, []
 			MessageCount: item.Messages,
 			Score:        item.Score,
 		}
+		topName := ""
+		if len(item.Participants) > 0 {
+			topName = item.Participants[0].Name
+		}
+		topic.Initial = "?"
+		if topName != "" {
+			topic.Initial = avatarInitial(topName)
+		}
+		if opts.AvatarBaseURL != "" && topName != "" {
+			if wxid := topWxid(topName, source.MessageIDs, byMID); wxid != "" {
+				topic.AvatarWxid = wxid
+				query := url.Values{}
+				query.Set("account", opts.Account)
+				query.Set("username", wxid)
+				topic.AvatarURL = strings.TrimRight(opts.AvatarBaseURL, "/") + "/api/chat/avatar?" + query.Encode()
+			}
+		}
 		if !opts.NoParticipants {
 			for _, participant := range item.Participants {
 				topic.Participants = append(topic.Participants, Participant{
@@ -183,6 +215,73 @@ func Build(st *reportstate.State, export *rank.Export, opts Options) (Report, []
 	rep.TopicTotal = len(rep.Topics)
 	rep.Resources = resourceOrder
 	return rep, warnings, nil
+}
+
+// avatarInitial 取昵称的第一个字（字素簇）并转大写。
+// 组合符号、变体选择符、肤色、ZWJ 序列和国旗修饰会一并保留，避免把 emoji 截坏。
+func avatarInitial(name string) string {
+	runes := []rune(strings.TrimSpace(name))
+	i := 0
+	for i < len(runes) && (unicode.IsSpace(runes[i]) || unicode.Is(unicode.Cf, runes[i]) || isBlankFiller(runes[i])) {
+		i++
+	}
+	if i >= len(runes) {
+		return "?"
+	}
+	end := i + 1
+	for end < len(runes) {
+		prev := runes[end-1]
+		cur := runes[end]
+		switch {
+		case prev == 0x200D || cur == 0x200D: // ZWJ 序列
+			end++
+		case isCombiningRune(cur) || cur == 0xFE0E || cur == 0xFE0F || cur == 0x20E3:
+			end++
+		case cur >= 0x1F3FB && cur <= 0x1F3FF: // 肤色修饰
+			end++
+		case cur >= 0x1F1E6 && cur <= 0x1F1FF: // 国旗的第二个区域指示符
+			end++
+		case cur >= 0xE0020 && cur <= 0xE007F: // 标签序列
+			end++
+		default:
+			return strings.ToUpper(string(runes[i:end]))
+		}
+	}
+	return strings.ToUpper(string(runes[i:end]))
+}
+
+func isCombiningRune(r rune) bool {
+	return unicode.Is(unicode.Mn, r) || unicode.Is(unicode.Me, r) || unicode.Is(unicode.Mc, r)
+}
+
+// isBlankFiller 是昵称里常见的不可见占位字符（盲文空白、韩文填充符等）。
+func isBlankFiller(r rune) bool {
+	switch r {
+	case 0x2800, 0x3164, 0xFFA0, 0x115F, 0x1160:
+		return true
+	}
+	return false
+}
+
+// topWxid 返回话题内指定昵称（参与者列表第一个）对应的 wxid。
+// 同名可能对应多个 wxid，取消息最多的那个；相同条数按 wxid 字典序取小，保证稳定。
+func topWxid(name string, messageIDs []string, byMID map[string]rank.Message) string {
+	counts := make(map[string]int, len(messageIDs))
+	for _, mid := range messageIDs {
+		message, ok := byMID[mid]
+		if !ok || message.Wxid == "" || message.Sender != name {
+			continue
+		}
+		counts[message.Wxid]++
+	}
+	best := ""
+	bestCount := 0
+	for wxid, count := range counts {
+		if count > bestCount || (count == bestCount && wxid < best) {
+			best, bestCount = wxid, count
+		}
+	}
+	return best
 }
 
 // parseSummary 把带 `人名` 和 [[res:n]] 标记的摘要拆成结构化片段。

@@ -2,7 +2,9 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,6 +37,8 @@ type Options struct {
 	Compress       bool
 	Title          string
 	Location       *time.Location
+	// AvatarBaseURL 非空时为每个话题生成并内嵌消息最多者的头像。
+	AvatarBaseURL string
 }
 
 // Result 是一次运行的产物摘要。
@@ -147,6 +151,8 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 		Top:            10,
 		NoParticipants: opts.NoParticipants,
 		Location:       opts.Location,
+		AvatarBaseURL:  opts.AvatarBaseURL,
+		Account:        opts.Account,
 	})
 	if err != nil {
 		return Result{}, fmt.Errorf("report: %w", err)
@@ -166,6 +172,21 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 	printRanking(stdout, rep)
 
 	_, _ = fmt.Fprintln(stdout, "== 生成长图 ==")
+	if opts.AvatarBaseURL != "" {
+		// 把每个话题消息最多者的头像拉下来内嵌成 data URI，保证截图自包含。
+		for i := range rep.Topics {
+			topic := &rep.Topics[i]
+			if topic.AvatarWxid == "" {
+				continue
+			}
+			data, avatarErr := siwx.FetchAvatar(opts.Account, topic.AvatarWxid)
+			if avatarErr != nil {
+				_, _ = fmt.Fprintf(stdout, "警告: 话题 %d 头像获取失败：%v\n", topic.Rank, avatarErr)
+				continue
+			}
+			topic.AvatarData = "data:" + imageMIME(data) + ";base64," + base64.StdEncoding.EncodeToString(data)
+		}
+	}
 	htmlBytes, err := report.HTML(rep, opts.Title)
 	if err != nil {
 		return Result{}, fmt.Errorf("report html: %w", err)
@@ -242,6 +263,23 @@ func loadExport(path string) (*rank.Export, error) {
 		return nil, fmt.Errorf("解析消息导出 %s: %w", filepath.Base(path), err)
 	}
 	return &export, nil
+}
+
+// imageMIME 按文件头判断图片类型。SIWX 返回的 Content-Type 不可靠
+// （透明 PNG 常被标成 image/jpeg），data URI 必须用真实类型。
+func imageMIME(data []byte) string {
+	switch {
+	case bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n")):
+		return "image/png"
+	case len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF:
+		return "image/jpeg"
+	case bytes.HasPrefix(data, []byte("GIF87a")) || bytes.HasPrefix(data, []byte("GIF89a")):
+		return "image/gif"
+	case len(data) >= 12 && bytes.HasPrefix(data, []byte("RIFF")) && string(data[8:12]) == "WEBP":
+		return "image/webp"
+	default:
+		return "image/jpeg"
+	}
 }
 
 func printRanking(w io.Writer, rep report.Report) {

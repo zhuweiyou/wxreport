@@ -23,7 +23,10 @@
       <section class="feed">
         {{range .Topics}}
         <article class="topic moment">
-          <div class="moment__avatar moment__avatar--{{.Rank}}" aria-hidden="true">{{printf "%02d" .Rank}}</div>
+          <div class="moment__avatar moment__avatar--{{.Rank}}">
+            <span class="moment__initial">{{.Initial}}</span>
+            {{if .AvatarSrc}}<img class="moment__avatar-img" src="{{.AvatarSrc}}" alt="" onerror="this.remove()" />{{end}}
+          </div>
           <div class="moment__main">
             <h2 class="moment__name">{{.Title}}</h2>
             <p class="moment__text">{{range .Segments}}{{if eq .Kind "person"}}<span class="person">{{.Text}}</span>{{else if eq .Kind "resource"}}<a class="res-ref" href="{{.URL}}">[{{.Index}}]</a>{{else}}{{.Text}}{{end}}{{end}}</p>

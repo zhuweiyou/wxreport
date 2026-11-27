@@ -110,6 +110,14 @@ func Capture(ctx context.Context, opts Options) (Result, error) {
 		fmt.Fprintln(os.Stderr, "警告: 字体未在 10 秒内就绪，截图可能使用回退字体")
 	}
 
+	// 头像是内嵌 data URI，等所有图片解码完成再截图，避免出现空白方块。
+	if _, err := chromedp.Run(browserCtx, chromedp.Poll[bool](
+		`Array.from(document.images).every(img => img.complete)`,
+		chromedp.WithPollingTimeout(10*time.Second),
+	)); err != nil {
+		fmt.Fprintln(os.Stderr, "警告: 图片未在 10 秒内就绪，截图可能缺少头像")
+	}
+
 	height, err := chromedp.Run(browserCtx, chromedp.Evaluate[float64](`(() => {
 		window.scrollTo(0, 0);
 		return Math.max(

@@ -100,6 +100,7 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 		Compress:       envBool("WXREPORT_COMPRESS", true),
 		Title:          os.Getenv("WXREPORT_TITLE"),
 		Location:       loc,
+		AvatarBaseURL:  siwx.BaseURL(),
 	}, liveSteps{summarizer: summarize.New(cfg)}, stdout)
 	if err != nil {
 		return err

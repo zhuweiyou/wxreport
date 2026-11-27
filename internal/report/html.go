@@ -41,6 +41,15 @@ type reportPage struct {
 	PageTitle string
 	FontCSS   template.CSS
 	CSS       template.CSS
+	Topics    []htmlTopic
+}
+
+// htmlTopic 在 Topic 基础上提供可安全输出的头像 src。
+// html/template 默认把 data: URI 判为不安全并替换成 #ZgotmplZ，
+// 这里用 template.URL 显式声明这是可信的内嵌图片。
+type htmlTopic struct {
+	Topic
+	AvatarSrc template.URL
 }
 
 // HTML 用结构化报告生成一份自包含的移动端页面，供 headless Chrome 截图。
@@ -52,11 +61,20 @@ func HTML(rep Report, title string) ([]byte, error) {
 	if pageTitle == "" {
 		pageTitle = "24小时话题TOP10"
 	}
+	topics := make([]htmlTopic, len(rep.Topics))
+	for i, topic := range rep.Topics {
+		var src template.URL
+		if topic.AvatarData != "" {
+			src = template.URL(topic.AvatarData)
+		}
+		topics[i] = htmlTopic{Topic: topic, AvatarSrc: src}
+	}
 	page := reportPage{
 		Report:    rep,
 		PageTitle: pageTitle,
 		FontCSS:   template.CSS(rareFontCSS),
 		CSS:       template.CSS(reportCSS),
+		Topics:    topics,
 	}
 	var out bytes.Buffer
 	if err := reportTemplate.Execute(&out, page); err != nil {

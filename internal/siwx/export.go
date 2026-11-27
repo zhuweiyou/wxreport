@@ -18,6 +18,7 @@ type ExportMessage struct {
 	MID       string `json:"mid"`
 	TS        int64  `json:"ts"`
 	Sender    string `json:"sender"`
+	Wxid      string `json:"wxid,omitempty"`
 	Kind      string `json:"kind"`
 	Text      string `json:"text,omitempty"`
 	Link      string `json:"link,omitempty"`
@@ -91,6 +92,7 @@ func Export(account, chat string, start, end int64, out string) (ExportStats, er
 			MID:    chatMessageKey(message),
 			TS:     message.TS,
 			Sender: sender,
+			Wxid:   message.SenderWxid,
 			Kind:   message.Kind,
 			Text:   strings.TrimSpace(message.Text),
 			Link:   link,

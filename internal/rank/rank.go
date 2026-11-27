@@ -47,6 +47,7 @@ type Message struct {
 	MID       string `json:"mid"`
 	TS        int64  `json:"ts"`
 	Sender    string `json:"sender"`
+	Wxid      string `json:"wxid,omitempty"`
 	Kind      string `json:"kind"`
 	Text      string `json:"text"`
 	Link      string `json:"link"`
