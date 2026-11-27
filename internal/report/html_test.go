@@ -46,7 +46,9 @@ func TestHTMLRendersReport(t *testing.T) {
 		"一句话点评",
 		"甲",
 		"https://example.com/a",
-		".topic",
+		"moment__avatar",
+		"moment__comments",
+		"锐评",
 	} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q", want)

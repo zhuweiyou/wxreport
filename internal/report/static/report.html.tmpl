@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.PageTitle}}</title>
+    <style>{{.FontCSS}}</style>
+    <style>{{.CSS}}</style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div class="hero__eyebrow">24 小时话题报告</div>
+        <h1 class="hero__title">{{.ChatName}}</h1>
+        <div class="hero__window">{{.WindowStart}} — {{.WindowEnd}}</div>
+        <div class="stats">
+          <div class="stat"><b>{{.MessageTotal}}</b><span>条消息</span></div>
+          <div class="stat"><b>{{.ParticipantTotal}}</b><span>人参与</span></div>
+          <div class="stat"><b>{{.TopicTotal}}</b><span>个话题</span></div>
+        </div>
+      </header>
+
+      <section class="feed">
+        {{range .Topics}}
+        <article class="topic moment">
+          <div class="moment__avatar moment__avatar--{{.Rank}}" aria-hidden="true">{{printf "%02d" .Rank}}</div>
+          <div class="moment__main">
+            <h2 class="moment__name">{{.Title}}</h2>
+            <p class="moment__text">{{range .Segments}}{{if eq .Kind "person"}}<span class="person">{{.Text}}</span>{{else if eq .Kind "resource"}}<a class="res-ref" href="{{.URL}}">[{{.Index}}]</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+            <div class="moment__meta">
+              <span>{{.MessageCount}} 条消息</span>
+              <span class="moment__action" aria-hidden="true">···</span>
+            </div>
+            {{if or .Participants .Commentary}}
+            <div class="moment__comments">
+              {{if .Participants}}
+              <div class="moment__likes">
+                <svg class="moment__heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z" />
+                </svg>
+                <span class="moment__likes-names">{{range $i, $p := .Participants}}{{if $i}}<span class="moment__people-sep">、</span>{{end}}<span class="moment__person">{{$p.Name}}</span>{{end}}</span>
+              </div>
+              {{end}}
+              {{if .Commentary}}
+              <div class="moment__comment"><span class="moment__comment-name">锐评</span>：{{.Commentary}}</div>
+              {{end}}
+            </div>
+            {{end}}
+          </div>
+        </article>
+        {{end}}
+      </section>
+
+      {{if .Resources}}
+      <section class="resources">
+        <h2 class="resources__title">资源列表</h2>
+        {{range .Resources}}<a class="res res--full" href="{{.URL}}"><span class="res__idx">{{.Index}}</span><span class="res__body"><span class="res__title">{{.Title}}</span><span class="res__url">{{.URL}}</span></span></a>{{end}}
+      </section>
+      {{end}}
+    </main>
+  </body>
+</html>

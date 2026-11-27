@@ -1,6 +1,6 @@
 // Package shot 把自包含 HTML 截图成移动端长图。
 //
-// 不启动本地 server、不依赖登录态：交给 headless Chrome 以固定 375 CSS px 视口截图，
+// 不启动本地 server、不依赖登录态：交给 headless Chrome 以固定 440 CSS px 视口截图，
 // 按 2x/3x 输出 PNG。报告很长时自动分片截图再拼接，绕开 Chrome 单张截图的纹理高度上限。
 package shot
 
@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	// DefaultWidth 是移动端 CSS 视口宽度；375 × 2 = 750，正好是手机 2x 图。
-	DefaultWidth = 375
+	// DefaultWidth 是移动端 CSS 视口宽度；440 × 2 = 880，正好是手机 2x 图。
+	DefaultWidth = 440
 	// DefaultScale 是默认缩放倍数。3x 会得到 1125 宽的图，体积更大。
 	DefaultScale = 2
 	// sliceCSSHeight 是单次截图的 CSS 高度。2x 时 3000 CSS px = 6000 设备 px，

@@ -1,0 +1,346 @@
+:root {
+  --page: #ffffff;
+  --ink: #1f2937;
+  --ink-soft: #4b5563;
+  --muted: #8b98aa;
+  --line: #eceff3;
+  --comment: #f7f7f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #ececec;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Shot Lepcha", "Shot Tai Tham",
+    "Microsoft Himalaya", "Kailasa", "Apple Color Emoji", "Segoe UI Emoji",
+    "Noto Color Emoji", sans-serif;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  width: 440px;
+  margin: 0 auto;
+  padding-bottom: 0;
+  background: var(--page);
+}
+
+/* ---------- 顶部 ---------- */
+
+.hero {
+  padding: 32px 22px 26px;
+  color: #fff;
+  background:
+    radial-gradient(120% 100% at 10% 0%, rgba(104, 143, 168, 0.4), transparent 58%),
+    radial-gradient(100% 100% at 95% 15%, rgba(170, 134, 98, 0.26), transparent 60%),
+    linear-gradient(160deg, #2c3842 0%, #1b242c 55%, #0d1116 100%);
+  border-radius: 0;
+}
+
+.hero__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.hero__title {
+  margin: 12px 0 7px;
+  font-size: 25px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  text-align: center;
+}
+
+.hero__window {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.stat {
+  flex: 1;
+  padding: 12px 8px 10px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.stat b {
+  display: block;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+/* ---------- 朋友圈信息流 ---------- */
+
+.feed {
+  background: #fff;
+}
+
+.moment {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 16px 14px;
+  background: #fff;
+}
+
+.moment + .moment {
+  border-top: 1px solid #f0f1f3;
+}
+
+/* 01–10 序号头像，用轻微的色彩区分，避免整页发灰 */
+.moment__avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(145deg, #7f9ab8 0%, #58718c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.moment__avatar--1 { background: linear-gradient(145deg, #7f9ab8 0%, #58718c 100%); }
+.moment__avatar--2 { background: linear-gradient(145deg, #9a86ad 0%, #6e5c80 100%); }
+.moment__avatar--3 { background: linear-gradient(145deg, #8fa886 0%, #657d5e 100%); }
+.moment__avatar--4 { background: linear-gradient(145deg, #b79373 0%, #89674a 100%); }
+.moment__avatar--5 { background: linear-gradient(145deg, #86a9b1 0%, #5f7f87 100%); }
+.moment__avatar--6 { background: linear-gradient(145deg, #b18782 0%, #84605b 100%); }
+.moment__avatar--7 { background: linear-gradient(145deg, #949bb5 0%, #6a718d 100%); }
+.moment__avatar--8 { background: linear-gradient(145deg, #b0a37d 0%, #7e7352 100%); }
+.moment__avatar--9 { background: linear-gradient(145deg, #8eab9b 0%, #657f70 100%); }
+.moment__avatar--10 { background: linear-gradient(145deg, #a98a99 0%, #7b5d6b 100%); }
+
+.moment__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.moment__name {
+  margin: 1px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 600;
+  letter-spacing: 0.002em;
+  color: #111827;
+}
+
+.moment__text {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.78;
+  color: #222;
+  word-break: break-word;
+}
+
+.person {
+  color: #111827;
+  font-weight: 500;
+}
+
+.res-ref {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 10.5px;
+  vertical-align: super;
+  font-weight: 600;
+}
+
+/* 参与者按朋友圈点赞区的位置放在评论框里 */
+.moment__likes {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.moment__heart {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 3px;
+  color: #8b98aa;
+}
+
+.moment__likes-names {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.moment__person {
+  color: #475569;
+}
+
+.moment__people-sep {
+  color: #b7c0cc;
+}
+
+.moment__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  color: #a0a7b3;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.moment__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 20px;
+  padding: 0 5px;
+  color: #9aa3af;
+  background: #f2f3f5;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+
+/* AI 点评放在朋友圈评论区的位置 */
+.moment__comments {
+  margin-top: 9px;
+  padding: 8px 10px;
+  color: #222;
+  background: var(--comment);
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.moment__likes + .moment__comment {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid #ececec;
+}
+
+.moment__comment-name {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* ---------- 底部资源 ---------- */
+
+.resources {
+  margin-top: 8px;
+  padding: 22px 16px 26px;
+  background: #fff;
+  border-top: 8px solid #f3f4f6;
+}
+
+.resources__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #111827;
+}
+
+.res {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0;
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: transparent;
+  border-radius: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.res + .res {
+  border-top: 1px solid #f0f3f8;
+}
+
+.res:last-child {
+  margin-bottom: 0;
+}
+
+.res__idx {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.res__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.res__title {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.res__url {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #7c8798;
+  word-break: break-all;
+}

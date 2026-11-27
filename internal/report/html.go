@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-//go:embed static/report-v2.css
+//go:embed static/report.css
 var reportCSS string
 
-//go:embed static/report-v2.html.tmpl
+//go:embed static/report.html.tmpl
 var reportTemplateSource string
 
 //go:embed static/NotoSansLepcha-Regular.ttf

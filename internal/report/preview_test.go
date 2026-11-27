@@ -8,17 +8,17 @@ import (
 )
 
 // 仅用于 UI 迭代：REPORT_PREVIEW=1 go test ./internal/report -run TestPreviewHTML
-// 用 mock 数据把 static/report-v2.* 渲染到 data/report-preview.html。
+// 用 mock 数据把 static/report.* 渲染到 data/report-preview.html。
 func TestPreviewHTML(t *testing.T) {
 	if os.Getenv("REPORT_PREVIEW") == "" {
 		t.Skip("设置 REPORT_PREVIEW=1 生成预览")
 	}
 
-	tmplSource, err := os.ReadFile("static/report-v2.html.tmpl")
+	tmplSource, err := os.ReadFile("static/report.html.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
-	css, err := os.ReadFile("static/report-v2.css")
+	css, err := os.ReadFile("static/report.css")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,6 +47,7 @@ func TestPreviewHTML(t *testing.T) {
 		Segments     []segment
 		Participants []participant
 		Resources    []resource
+		MessageCount int
 	}
 
 	resources := []resource{
@@ -58,10 +59,11 @@ func TestPreviewHTML(t *testing.T) {
 
 	topics := []topic{
 		{
-			Rank:       1,
-			RankClass:  "top1",
-			Title:      "腾讯视频超前点映与闲鱼租号生意",
-			Commentary: "从超前点映到会员租号，群友把「信息差」三个字研究成了一门灰色生意。",
+			Rank:         1,
+			RankClass:    "top1",
+			Title:        "腾讯视频超前点映与闲鱼租号生意",
+			MessageCount: 42,
+			Commentary:   "从超前点映到会员租号，群友把「信息差」三个字研究成了一门灰色生意。",
 			Segments: []segment{
 				{Kind: "text", Text: "摩达ᴹᴼᴰᴬ 透露「之前展开给我扫码登录的号，到现在还能刷新 Cookie」，"},
 				{Kind: "person", Text: "Not Be丶HHH"},
@@ -77,10 +79,11 @@ func TestPreviewHTML(t *testing.T) {
 			Resources: resources[:2],
 		},
 		{
-			Rank:       2,
-			RankClass:  "top2",
-			Title:      "从 gay 酒局到洛阳铲相亲局",
-			Commentary: "「有男朋友又不是有老公，还有机会」——一句复读，基本概括了本群的全部婚恋观。",
+			Rank:         2,
+			RankClass:    "top2",
+			Title:        "从 gay 酒局到洛阳铲相亲局",
+			MessageCount: 36,
+			Commentary:   "「有男朋友又不是有老公，还有机会」——一句复读，基本概括了本群的全部婚恋观。",
 			Segments: []segment{
 				{Kind: "person", Text: "某乜嘢。"},
 				{Kind: "text", Text: " 深夜被拉去一个酒局，全程直播社恐：「特么的等会进去四五个 gay 就我一个直男」；"},
@@ -96,10 +99,11 @@ func TestPreviewHTML(t *testing.T) {
 			},
 		},
 		{
-			Rank:       3,
-			RankClass:  "top3",
-			Title:      "血橙、草莓妹妹与骑手自取",
-			Commentary: "一箱血橙引出妹妹照片和全群复读，最后没人关心血橙，只关心「老吃家」。",
+			Rank:         3,
+			RankClass:    "top3",
+			Title:        "血橙、草莓妹妹与骑手自取",
+			MessageCount: 29,
+			Commentary:   "一箱血橙引出妹妹照片和全群复读，最后没人关心血橙，只关心「老吃家」。",
 			Segments: []segment{
 				{Kind: "person", Text: "72521（西西红柿版"},
 				{Kind: "text", Text: " 晒门口水果自取，众人追问妹妹微信和血橙味道；"},
@@ -114,10 +118,11 @@ func TestPreviewHTML(t *testing.T) {
 			Resources: resources[1:2],
 		},
 		{
-			Rank:       4,
-			RankClass:  "",
-			Title:      "软考、杭州 E 类人才与亚运村",
-			Commentary: "从软考难度聊到杭州补贴，最后发现证有用但首付没有。",
+			Rank:         4,
+			RankClass:    "",
+			Title:        "软考、杭州 E 类人才与亚运村",
+			MessageCount: 18,
+			Commentary:   "从软考难度聊到杭州补贴，最后发现证有用但首付没有。",
 			Segments: []segment{
 				{Kind: "person", Text: "Facksxx"},
 				{Kind: "text", Text: " 问 "},
@@ -134,10 +139,11 @@ func TestPreviewHTML(t *testing.T) {
 			Resources: resources[2:3],
 		},
 		{
-			Rank:       5,
-			RankClass:  "",
-			Title:      "一块钱瑞幸：外卖神券教程",
-			Commentary: "券包涨到 3.6 后，群友的主线从「怎么领」变成「怎么退、怎么换设备、怎么卡明天刷新」。",
+			Rank:         5,
+			RankClass:    "",
+			Title:        "一块钱瑞幸：外卖神券教程",
+			MessageCount: 15,
+			Commentary:   "券包涨到 3.6 后，群友的主线从「怎么领」变成「怎么退、怎么换设备、怎么卡明天刷新」。",
 			Segments: []segment{
 				{Kind: "person", Text: "Not Be丶HHH"},
 				{Kind: "text", Text: " 继续答疑：券包每个号不一样、第二天会刷新；"},

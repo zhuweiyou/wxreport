@@ -117,7 +117,7 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 
 报告 HTML 由 `internal/report.HTML` 直接渲染 `Report`：
 
-- 模板与样式在 `internal/report/static/report-v2.*`
+- 模板与样式在 `internal/report/static/report.*`
 - 不使用 Markdown 渲染器，也没有 github-markdown css
 - 标题优先 `WXREPORT_TITLE`，未配置时使用 `Report.Title`
 
