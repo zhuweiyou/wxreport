@@ -38,14 +38,11 @@
             <div class="moment__comments">
               {{if .Participants}}
               <div class="moment__likes">
-                <svg class="moment__heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z" />
-                </svg>
-                <span class="moment__likes-names">{{range $i, $p := .Participants}}{{if $i}}<span class="moment__people-sep">、</span>{{end}}<span class="moment__person">{{$p.Name}}</span>{{end}}</span>
+                <span class="moment__likes-avatars">{{range .Participants}}<span class="moment__person-avatar">{{.Initial}}{{if .AvatarSrc}}<img class="moment__person-avatar-img" src="{{.AvatarSrc}}" alt="" onerror="this.remove()" />{{end}}</span>{{end}}</span>
               </div>
               {{end}}
               {{if .Commentary}}
-              <div class="moment__comment"><span class="moment__comment-name">锐评</span>：{{.Commentary}}</div>
+              <div class="moment__comment">{{.Commentary}}</div>
               {{end}}
             </div>
             {{end}}

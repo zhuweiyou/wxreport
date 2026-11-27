@@ -64,6 +64,14 @@ type Segment struct {
 type Participant struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`
+	// Initial 是昵称首字，头像缺失时作为占位。
+	Initial string `json:"initial,omitempty"`
+	// AvatarURL 是该参与者的头像地址。
+	AvatarURL string `json:"avatar_url,omitempty"`
+	// AvatarWxid 仅用于本地拉取头像，不写入报告 JSON。
+	AvatarWxid string `json:"-"`
+	// AvatarData 是头像 data URI，仅用于截图 HTML。
+	AvatarData string `json:"-"`
 }
 
 // Resource 是全局去重编号后的资源。
@@ -196,18 +204,21 @@ func Build(st *reportstate.State, export *rank.Export, opts Options) (Report, []
 		if opts.AvatarBaseURL != "" && topName != "" {
 			if wxid := topWxid(topName, source.MessageIDs, byMID); wxid != "" {
 				topic.AvatarWxid = wxid
-				query := url.Values{}
-				query.Set("account", opts.Account)
-				query.Set("username", wxid)
-				topic.AvatarURL = strings.TrimRight(opts.AvatarBaseURL, "/") + "/api/chat/avatar?" + query.Encode()
+				topic.AvatarURL = avatarURL(opts.AvatarBaseURL, opts.Account, wxid)
 			}
 		}
 		if !opts.NoParticipants {
 			for _, participant := range item.Participants {
-				topic.Participants = append(topic.Participants, Participant{
-					Name:  participant.Name,
-					Count: participant.Count,
-				})
+				entry := Participant{
+					Name:    participant.Name,
+					Count:   participant.Count,
+					Initial: avatarInitial(participant.Name),
+				}
+				if opts.AvatarBaseURL != "" {
+					entry.AvatarWxid = topWxid(participant.Name, source.MessageIDs, byMID)
+					entry.AvatarURL = avatarURL(opts.AvatarBaseURL, opts.Account, entry.AvatarWxid)
+				}
+				topic.Participants = append(topic.Participants, entry)
 			}
 		}
 		rep.Topics = append(rep.Topics, topic)
@@ -261,6 +272,17 @@ func isBlankFiller(r rune) bool {
 		return true
 	}
 	return false
+}
+
+// avatarURL 拼接 SIWX 本地头像接口地址。
+func avatarURL(base, account, wxid string) string {
+	if base == "" || wxid == "" {
+		return ""
+	}
+	query := url.Values{}
+	query.Set("account", account)
+	query.Set("username", wxid)
+	return strings.TrimRight(base, "/") + "/api/chat/avatar?" + query.Encode()
 }
 
 // topWxid 返回话题内指定昵称（参与者列表第一个）对应的 wxid。

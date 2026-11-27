@@ -49,6 +49,12 @@ type reportPage struct {
 // 这里用 template.URL 显式声明这是可信的内嵌图片。
 type htmlTopic struct {
 	Topic
+	AvatarSrc   template.URL
+	Participants []htmlParticipant
+}
+
+type htmlParticipant struct {
+	Participant
 	AvatarSrc template.URL
 }
 
@@ -67,7 +73,15 @@ func HTML(rep Report, title string) ([]byte, error) {
 		if topic.AvatarData != "" {
 			src = template.URL(topic.AvatarData)
 		}
-		topics[i] = htmlTopic{Topic: topic, AvatarSrc: src}
+		participants := make([]htmlParticipant, len(topic.Participants))
+		for j, participant := range topic.Participants {
+			var participantSrc template.URL
+			if participant.AvatarData != "" {
+				participantSrc = template.URL(participant.AvatarData)
+			}
+			participants[j] = htmlParticipant{Participant: participant, AvatarSrc: participantSrc}
+		}
+		topics[i] = htmlTopic{Topic: topic, AvatarSrc: src, Participants: participants}
 	}
 	page := reportPage{
 		Report:    rep,

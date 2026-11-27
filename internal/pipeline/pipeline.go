@@ -173,18 +173,32 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 
 	_, _ = fmt.Fprintln(stdout, "== 生成长图 ==")
 	if opts.AvatarBaseURL != "" {
-		// 把每个话题消息最多者的头像拉下来内嵌成 data URI，保证截图自包含。
+		// 把话题头像和参与者头像拉下来内嵌成 data URI，保证截图自包含；
+		// 同一 wxid 只请求一次。
+		cache := make(map[string]string)
+		fetch := func(wxid string) string {
+			if wxid == "" {
+				return ""
+			}
+			if uri, ok := cache[wxid]; ok {
+				return uri
+			}
+			data, avatarErr := siwx.FetchAvatar(opts.Account, wxid)
+			if avatarErr != nil {
+				cache[wxid] = ""
+				return ""
+			}
+			uri := "data:" + imageMIME(data) + ";base64," + base64.StdEncoding.EncodeToString(data)
+			cache[wxid] = uri
+			return uri
+		}
 		for i := range rep.Topics {
 			topic := &rep.Topics[i]
-			if topic.AvatarWxid == "" {
-				continue
+			topic.AvatarData = fetch(topic.AvatarWxid)
+			for j := range topic.Participants {
+				participant := &topic.Participants[j]
+				participant.AvatarData = fetch(participant.AvatarWxid)
 			}
-			data, avatarErr := siwx.FetchAvatar(opts.Account, topic.AvatarWxid)
-			if avatarErr != nil {
-				_, _ = fmt.Fprintf(stdout, "警告: 话题 %d 头像获取失败：%v\n", topic.Rank, avatarErr)
-				continue
-			}
-			topic.AvatarData = "data:" + imageMIME(data) + ";base64," + base64.StdEncoding.EncodeToString(data)
 		}
 	}
 	htmlBytes, err := report.HTML(rep, opts.Title)
