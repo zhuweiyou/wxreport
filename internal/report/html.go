@@ -49,7 +49,7 @@ type reportPage struct {
 // 这里用 template.URL 显式声明这是可信的内嵌图片。
 type htmlTopic struct {
 	Topic
-	AvatarSrc   template.URL
+	AvatarSrc    template.URL
 	Participants []htmlParticipant
 }
 
