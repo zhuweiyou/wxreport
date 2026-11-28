@@ -36,6 +36,7 @@ type Options struct {
 	NoParticipants bool
 	Compress       bool
 	Title          string
+	Theme          string
 	Location       *time.Location
 	// AvatarBaseURL 非空时为每个话题生成并内嵌消息最多者的头像。
 	AvatarBaseURL string
@@ -201,14 +202,17 @@ func Run(ctx context.Context, opts Options, steps Steps, stdout io.Writer) (Resu
 			}
 		}
 	}
-	htmlBytes, err := report.HTML(rep, opts.Title)
+	htmlResult, err := report.HTML(rep, report.HTMLOptions{
+		Title: opts.Title,
+		Theme: opts.Theme,
+	})
 	if err != nil {
 		return Result{}, fmt.Errorf("report html: %w", err)
 	}
 	shotResult, err := steps.Shot(ctx, shot.Options{
-		HTML:  htmlBytes,
+		HTML:  htmlResult.HTML,
 		Slug:  slug,
-		Width: shot.DefaultWidth,
+		Width: htmlResult.Width,
 		Scale: shot.DefaultScale,
 	})
 	if err != nil {

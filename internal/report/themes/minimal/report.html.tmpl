@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.PageTitle}}</title>
+    <style>{{.FontCSS}}</style>
+    <style>{{.CSS}}</style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="masthead">
+        <div class="masthead__eyebrow">24 小时话题报告</div>
+        <h1 class="masthead__title">{{.ChatName}}</h1>
+        <div class="masthead__window">{{.WindowStart}} — {{.WindowEnd}}</div>
+        <div class="masthead__stats">
+          <span><b>{{.MessageTotal}}</b> 条消息</span>
+          <span><b>{{.ParticipantTotal}}</b> 人参与</span>
+          <span><b>{{.TopicTotal}}</b> 个话题</span>
+        </div>
+      </header>
+
+      <section class="topics">
+        {{range .Topics}}
+        <article class="topic">
+          <div class="topic__head">
+            <span class="topic__rank">{{.Rank}}</span>
+            <h2 class="topic__title">{{.Title}}</h2>
+          </div>
+          <p class="topic__text">{{range .Segments}}{{if eq .Kind "person"}}<strong>{{.Text}}</strong>{{else if eq .Kind "resource"}}<a class="ref" href="{{.URL}}">[{{.Index}}]</a>{{else}}{{.Text}}{{end}}{{end}}</p>
+          <div class="topic__meta">
+            <span>{{.MessageCount}} 条消息</span>
+            {{if .Participants}}<span>{{len .Participants}} 人参与</span>{{end}}
+          </div>
+          {{if .Commentary}}<p class="topic__comment">{{.Commentary}}</p>{{end}}
+        </article>
+        {{end}}
+      </section>
+
+      {{if .Resources}}
+      <section class="resources">
+        <h2 class="resources__title">资源列表</h2>
+        {{range .Resources}}<a class="res" href="{{.URL}}"><span class="res__idx">{{.Index}}</span><span class="res__body"><span class="res__title">{{.Title}}</span><span class="res__url">{{.URL}}</span></span></a>{{end}}
+      </section>
+      {{end}}
+    </main>
+  </body>
+</html>

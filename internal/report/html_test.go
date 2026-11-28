@@ -33,11 +33,11 @@ func testReport() Report {
 }
 
 func TestHTMLRendersReport(t *testing.T) {
-	htmlBytes, err := HTML(testReport(), "")
+	result, err := HTML(testReport(), HTMLOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(htmlBytes)
+	text := string(result.HTML)
 	for _, want := range []string{
 		"<title>「测试群」24 小时话题 TOP10</title>",
 		"测试群",
@@ -57,12 +57,33 @@ func TestHTMLRendersReport(t *testing.T) {
 }
 
 func TestHTMLUsesTitleOverride(t *testing.T) {
-	htmlBytes, err := HTML(testReport(), "自定义标题")
+	result, err := HTML(testReport(), HTMLOptions{Title: "自定义标题"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(htmlBytes)
+	text := string(result.HTML)
 	if !strings.Contains(text, "<title>自定义标题</title>") {
 		t.Error("title override missing")
+	}
+}
+
+func TestHTMLMinimalTheme(t *testing.T) {
+	result, err := HTML(testReport(), HTMLOptions{Theme: "minimal"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(result.HTML)
+	if !strings.Contains(text, "masthead") || !strings.Contains(text, "topic__rank") {
+		t.Error("minimal theme markup missing")
+	}
+	if result.Width != 390 {
+		t.Errorf("width = %d, want 390", result.Width)
+	}
+}
+
+func TestHTMLUnknownTheme(t *testing.T) {
+	_, err := HTML(testReport(), HTMLOptions{Theme: "not-exist"})
+	if err == nil || !strings.Contains(err.Error(), "未知主题") {
+		t.Fatalf("err = %v, want unknown theme error", err)
 	}
 }

@@ -99,6 +99,7 @@ func runOnce(ctx context.Context, root string, stdout io.Writer) error {
 		NoParticipants: !envBool("WXREPORT_PARTICIPANTS", true),
 		Compress:       envBool("WXREPORT_COMPRESS", true),
 		Title:          os.Getenv("WXREPORT_TITLE"),
+		Theme:          os.Getenv("WXREPORT_THEME"),
 		Location:       loc,
 		AvatarBaseURL:  siwx.BaseURL(),
 	}, liveSteps{summarizer: summarize.New(cfg)}, stdout)

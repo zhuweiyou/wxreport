@@ -2,39 +2,25 @@ package report
 
 import (
 	"bytes"
-	_ "embed"
-	"encoding/base64"
 	"fmt"
 	"html/template"
 	"strings"
+
+	"wxreport/internal/report/theme"
+	"wxreport/internal/report/themes"
 )
 
-//go:embed static/report.css
-var reportCSS string
+// HTMLOptions 控制报告 HTML 渲染。
+type HTMLOptions struct {
+	Title string
+	Theme string
+}
 
-//go:embed static/report.html.tmpl
-var reportTemplateSource string
-
-//go:embed static/NotoSansLepcha-Regular.ttf
-var lepchaFont []byte
-
-//go:embed static/NotoSansTaiTham-Regular.ttf
-var taiThamFont []byte
-
-// 微信群昵称里常见 ᰔᩚ（Lepcha + Tai Tham）装饰字符，Windows/macOS 默认都没有对应字体，
-// 不内嵌就会截成方框。字体只用于截图 HTML。
-var rareFontCSS = func() string {
-	var builder strings.Builder
-	builder.WriteString(`@font-face{font-family:"Shot Lepcha";src:url(data:font/ttf;base64,`)
-	builder.WriteString(base64.StdEncoding.EncodeToString(lepchaFont))
-	builder.WriteString(`) format("truetype");}`)
-	builder.WriteString(`@font-face{font-family:"Shot Tai Tham";src:url(data:font/ttf;base64,`)
-	builder.WriteString(base64.StdEncoding.EncodeToString(taiThamFont))
-	builder.WriteString(`) format("truetype");}`)
-	return builder.String()
-}()
-
-var reportTemplate = template.Must(template.New("report").Parse(reportTemplateSource))
+// HTMLResult 是渲染后的自包含 HTML 与主题声明的截图宽度。
+type HTMLResult struct {
+	HTML  []byte
+	Width int
+}
 
 type reportPage struct {
 	Report
@@ -59,8 +45,13 @@ type htmlParticipant struct {
 }
 
 // HTML 用结构化报告生成一份自包含的移动端页面，供 headless Chrome 截图。
-func HTML(rep Report, title string) ([]byte, error) {
-	pageTitle := strings.TrimSpace(title)
+func HTML(rep Report, opts HTMLOptions) (HTMLResult, error) {
+	selected, err := themes.Get(opts.Theme)
+	if err != nil {
+		return HTMLResult{}, err
+	}
+
+	pageTitle := strings.TrimSpace(opts.Title)
 	if pageTitle == "" {
 		pageTitle = rep.Title
 	}
@@ -83,16 +74,21 @@ func HTML(rep Report, title string) ([]byte, error) {
 		}
 		topics[i] = htmlTopic{Topic: topic, AvatarSrc: src, Participants: participants}
 	}
+
+	fontCSS := theme.SharedFontCSS()
+	if selected.ExtraFontCSS != "" {
+		fontCSS = template.CSS(string(fontCSS) + string(selected.ExtraFontCSS))
+	}
 	page := reportPage{
 		Report:    rep,
 		PageTitle: pageTitle,
-		FontCSS:   template.CSS(rareFontCSS),
-		CSS:       template.CSS(reportCSS),
+		FontCSS:   fontCSS,
+		CSS:       selected.CSS,
 		Topics:    topics,
 	}
 	var out bytes.Buffer
-	if err := reportTemplate.Execute(&out, page); err != nil {
-		return nil, fmt.Errorf("渲染 HTML 模板: %w", err)
+	if err := selected.Template.Execute(&out, page); err != nil {
+		return HTMLResult{}, fmt.Errorf("渲染 HTML 模板: %w", err)
 	}
-	return out.Bytes(), nil
+	return HTMLResult{HTML: out.Bytes(), Width: selected.Width}, nil
 }

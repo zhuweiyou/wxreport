@@ -117,7 +117,7 @@ N_eff = 1 / Σ(pᵢ²)          pᵢ = 第 i 个人在该话题的话轮占比
 
 报告 HTML 由 `internal/report.HTML` 直接渲染 `Report`：
 
-- 模板与样式在 `internal/report/static/report.*`
+- 主题机制见下方「主题」章节；模板与样式入口在 `internal/report/themes/moments/report.*`
 - 不使用 Markdown 渲染器，也没有 github-markdown css
 - 标题优先 `WXREPORT_TITLE`，未配置时使用 `Report.Title`
 
@@ -136,6 +136,79 @@ OSS 上传由 `internal/oss`：
 - 纯 Go、无 cgo、无网络
 - 压缩失败或结果不小于原图时，调用方保留原图
 - 依赖 `github.com/soniakeys/quant`（MIT）
+
+## 主题
+
+主题按 `internal/report/themes/<name>/` 分目录，每个主题是一个独立 Go package，固定包含：
+
+```text
+internal/report/themes/<name>/
+├── theme.go
+├── report.html.tmpl
+└── report.css
+```
+
+- `theme.go`：用 `//go:embed` 打包当前主题的模板/CSS，并实现 `New() theme.Theme`
+- `report.html.tmpl`：主题 HTML 模板
+- `report.css`：主题样式
+- 共享字体在 `internal/report/theme/fonts/`，所有主题共用，不要在每个主题重复放 ttf；`theme.SharedFontCSS()` 统一注入 `@font-face`
+- 主题 CSS 的 `font-family` 需包含 `"Shot Lepcha", "Shot Tai Tham"`；只有主题确需额外字体时，才在主题目录放自己的字体文件，并通过 `Theme.ExtraFontCSS` 追加
+- 默认主题是 `moments`；`WXREPORT_THEME` 为空或未设置时使用它。当前内置主题：`moments`、`minimal`
+
+### 新增主题
+
+1. 新建目录 `internal/report/themes/<name>/`，放入 `theme.go`、`report.html.tmpl`、`report.css`。
+2. `theme.go` 参考实现：
+
+```go
+package blue
+
+import (
+	_ "embed"
+	"html/template"
+
+	"wxreport/internal/report/theme"
+)
+
+//go:embed report.html.tmpl
+var templateSource string
+
+//go:embed report.css
+var cssSource string
+
+func New() theme.Theme {
+	return theme.Theme{
+		Name:     "blue",
+		Title:    "蓝色",
+		Width:    390,
+		Template: template.Must(template.New("blue").Parse(templateSource)),
+		CSS:      template.CSS(cssSource),
+	}
+}
+```
+
+3. 在 `internal/report/themes/themes.go` 的 `init()` 中注册并补 import：
+
+```go
+import bluetheme "wxreport/internal/report/themes/blue"
+
+func init() {
+	register(momentstheme.New())
+	register(minimaltheme.New())
+	register(bluetheme.New())
+}
+```
+
+4. `.env` 设置 `WXREPORT_THEME=blue`；如果是内置主题，可同步更新 `.env.example` 的提示。
+5. 模板可用字段：报告级 `ChatName`、`WindowStart`、`WindowEnd`、`MessageTotal`、`ParticipantTotal`、`TopicTotal`、`Topics`、`Resources`；话题级 `Rank`、`Title`、`Commentary`、`Segments`、`Participants`、`MessageCount`、`Score`、`Initial`。`Segments` 的 `Kind` 为 `text`、`person`、`resource`；资源字段为 `Index`、`Title`、`URL`。
+6. 测试和预览：
+
+```bash
+go test ./...
+REAL_SHOT=1 REAL_PREVIEW_THEME=blue go test ./internal/report -run TestRealShot
+```
+
+预览图输出到 `data/theme-preview-blue.png`。确认后执行 `make build` 并重启 daemon；主题是编译期注册，新增主题必须重新编译，不支持运行时从外部目录加载。
 
 ## SIWX 接口细节
 

@@ -5,20 +5,22 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"wxreport/internal/report/theme"
 )
 
 // 仅用于 UI 迭代：REPORT_PREVIEW=1 go test ./internal/report -run TestPreviewHTML
-// 用 mock 数据把 static/report.* 渲染到 data/report-preview.html。
+// 用 mock 数据把 themes/moments/report.* 渲染到 data/report-preview.html。
 func TestPreviewHTML(t *testing.T) {
 	if os.Getenv("REPORT_PREVIEW") == "" {
 		t.Skip("设置 REPORT_PREVIEW=1 生成预览")
 	}
 
-	tmplSource, err := os.ReadFile("static/report.html.tmpl")
+	tmplSource, err := os.ReadFile("themes/moments/report.html.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
-	css, err := os.ReadFile("static/report.css")
+	css, err := os.ReadFile("themes/moments/report.css")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +170,7 @@ func TestPreviewHTML(t *testing.T) {
 		"Topics":           topics,
 		"Resources":        resources,
 		"CSS":              template.CSS(css),
-		"FontCSS":          template.CSS(rareFontCSS),
+		"FontCSS":          theme.SharedFontCSS(),
 	}
 
 	out := filepath.Join("..", "..", "data", "report-preview.html")
